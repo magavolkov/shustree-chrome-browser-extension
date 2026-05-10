@@ -2,21 +2,22 @@
 Shustree Chrome Browser Extension (v1.5.9)
 https://chromewebstore.google.com/detail/shustree/fjancimbiajbfljkoggkchelcfmknkoo 
 
-A lightweight, highly customizable Google Chrome extension designed for advanced routing of browser traffic. This version (1.5.9_DEV_SHUSTREE_TLS_GITHUB) is a production-ready release showcasing advanced chrome.proxy API implementations, tailored for developers who need robust routing control.
+\
+A lightweight, highly customizable Google Chrome extension designed for advanced routing of browser traffic. This version (1.5.9_DEV_SHUSTREE_TLS_GITHUB) is a production-ready release showcasing advanced chrome.proxy API implementations, tailored for developers who need robust routing control.\
 
-Features & Russian Network Specifics
-    • Multi-Protocol Support: Configure and route traffic seamlessly through HTTP, HTTPS, and SOCKS5 proxy protocols.
-    • Highly Customizable API Routing: This production version showcases advanced, custom API calls for handling proxy dynamic configuration, authentication, and rules. You can easily advance or simplify the rules based on your infrastructure requirements.
-    • Russia Network Compliance:
-      ⚠️ Warning: SOCKS5 protocols are heavily DPI-blocked (Deep Packet Inspection) or throttled within the Russian Federation. If you are deploying nodes targeting users in Russia, it is highly recommended to use HTTP/HTTPS proxy protocols instead of SOCKS5.
+Features & Russian Network Specifics\
+    • Multi-Protocol Support: Configure and route traffic seamlessly through HTTP, HTTPS, and SOCKS5 proxy protocols.\
+    • Highly Customizable API Routing: This production version showcases advanced, custom API calls for handling proxy dynamic configuration, authentication, and rules. You can easily advance or simplify the rules based on your infrastructure requirements.\
+    • Russia Network Compliance:\
+      ⚠️ Warning: SOCKS5 protocols are heavily DPI-blocked (Deep Packet Inspection) or throttled within the Russian Federation. If you are deploying nodes targeting users in Russia, it is highly recommended to use HTTP/HTTPS proxy protocols instead of SOCKS5.\\
 
-Recommended Server-Side Backends
-To pair with this extension, you can easily deploy your own proxy servers using standard Linux packages:
-    • HTTP/HTTPS: Use Squid Proxy — a caching proxy for the Web supporting HTTP/HTTPS with robust access control.
-    • SOCKS5: Use Dante — a high-performance, industry-standard SOCKS server (ideal for setups outside of Russian DPI-restricted zones).
+Recommended Server-Side Backends\
+To pair with this extension, you can easily deploy your own proxy servers using standard Linux packages:\
+    • HTTP/HTTPS: Use Squid Proxy — a caching proxy for the Web supporting HTTP/HTTPS with robust access control.\
+    • SOCKS5: Use Dante — a high-performance, industry-standard SOCKS server (ideal for setups outside of Russian DPI-restricted zones).\\
 
-Extension Configuration Examples
-The core of the routing relies on Chrome's chrome.proxy.settings API. Below are code templates demonstrating how to structure the internal JSON configuration parameters within background.js (or your service worker) for different proxy setups.
+Extension Configuration Examples\
+The core of the routing relies on Chrome's chrome.proxy.settings API. Below are code templates demonstrating how to structure the internal JSON configuration parameters within background.js (or your service worker) for different proxy setups.\
 1. HTTP Proxy Configuration
 Routes all standard HTTP and fallback traffic through an unencrypted HTTP proxy server.
 
