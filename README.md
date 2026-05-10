@@ -43,7 +43,7 @@ chrome.proxy.settings.set({ value: httpConfig, scope: "regular" }, () => {
 ```
 
 __2. HTTPS (Secure) Proxy Configuration__  
-Encrypts the connection handshake and payload between your browser and the proxy server using TLS/SSL.
+Encrypts the connection handshake and payload between your browser and the proxy server using TLS/SSL.  
 ```
 JavaScript
 const httpsConfig = {
@@ -64,7 +64,7 @@ chrome.proxy.settings.set({ value: httpsConfig, scope: "regular" }, () => {
 ```
 
 __3. SOCKS5 Configuration__  
-Routes traffic through a SOCKS5 proxy server. (Note: Remember the blocking restrictions inside Russia).\
+Routes traffic through a SOCKS5 proxy server. (Note: Remember the blocking restrictions inside Russia).  
 ```
 JavaScript
 const socks5Config = {
