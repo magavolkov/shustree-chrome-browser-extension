@@ -1,0 +1,511 @@
+html, body {
+          height: 100%;
+          margin: 0; /* Remove default body margin */
+          padding: 0; /* Remove default body padding */
+          background-position: 50% 34%; /* Centers the image */                    
+}
+
+
+@font-face {
+          font-family: 'GOST type B';
+          src: url('fonts/gost/gosttypeb.eot'); /* IE9 Compat Modes */
+          src: url('fonts/gost/gosttypeb.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
+            url('fonts/gost/gosttypeb.woff') format('woff'), /* Modern Browsers */
+            url('fonts/gost/gosttypeb.ttf')  format('truetype'), /* Safari, Android, iOS */
+            url('fonts/gost/gosttypeb.svg#Gost Type B') format('svg'); /* Legacy iOS */
+}      
+
+
+/* Noto Sans */
+@font-face {
+  font-family: 'Noto Sans';
+  src: url('fonts/play/play-v21-cyrillic_latin-regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+
+.button {
+    padding:10px 88px 10px 88px;
+    text-align: center;
+    text-decoration: none;
+    font-size: 1.25em;
+    cursor: pointer;
+    font-family: "Play", sans-serif;;
+    font-weight: normal;
+    border-radius: 0px;
+    background: rgba(147, 225, 255, 0.5);
+    border: none;
+    color: rgba(147, 225, 255);
+    font-style: normal;
+}
+.divLine {
+  height:1px;
+  border-width:0px;
+  background-color:rgb(147,147,225);
+}
+.button:hover {
+    background: rgba(147, 225, 255);
+    cursor: pointer;
+    color:rgb( 15, 8, 100 );
+}
+.centered{
+    margin: auto;
+    width: 351px;
+}
+.okCarbon {
+    background: rgba(147, 225, 255, 0.4);
+    text-align:center;
+    color: rgba(85, 225, 255);
+    font-size: 1.2em;
+    font-weight: 400;
+    padding:14px 100px 14px 100px;
+    border: none;
+    text-decoration: none;
+}
+.okCarbon:hover {
+    font-weight: 400;
+    color:rgb(14,8,100);
+    background: rgba(147, 225, 255);
+    cursor: pointer;
+}
+
+.d2 {
+   height:1px;
+   border-width:0px;
+   background-color:rgba(157,157,225,0.5);
+    margin: 16px 0 16px 0;
+    width:calc(100% - 50px);
+}
+.footerX {
+font-size:1.5em;
+}
+
+.d1 {
+    height:1px;
+    border-width:0px;
+    background-color:rgba(157,157,255,0.5);
+    margin: 10px 0 10px 0;
+    width:calc(100% - 50px);"
+}
+.page {
+    width: 495px;
+    height: 285px;
+    display: none;
+    color: rgb(175, 175, 225);
+    position: absolute;
+    top: 285px;
+    right: calc(50% - 244px);
+    margin: auto;
+    
+    background: 
+        /* The "Grime" layer */
+        radial-gradient(circle at 30% 40%, rgba(0, 0, 0, 0.2), transparent),
+        /* Base Conic Gradient */
+        conic-gradient(
+            from 180deg at 50% 50%,
+            rgba(7, 34, 77, 1) 0deg,
+            rgba(15, 45, 95, 1) 120deg,
+            rgba(7, 34, 77, 1) 200deg,
+            rgba(15, 45, 95, 1) 310deg,
+            rgba(7, 34, 77, 1) 360deg
+        );
+
+    background-blend-mode: color-dodge, multiply, normal;
+    
+    /* Тень: смещение 0 0, размытие 7px, бирюзовый с прозрачностью 15% */
+    box-shadow: 0 0 7px rgba(0, 200, 220, 0.15), 0 0 20px rgba(0, 200, 220, 0.05);
+    
+    z-index: 5;
+}
+
+
+.errortext {
+    /* Размер шрифта как в оригинале */
+    font-size: 1.5em;
+    
+    /* Добавляем паддинги 17px */
+    padding: 17px;
+    
+    /* Заставляем блок занимать всю доступную ширину родителя */
+    display: block;
+    width: 100%;
+    box-sizing: border-box; /* Чтобы паддинги не увеличивали ширину больше 100% */
+    
+    /* Центрирование текста */
+    text-align: left;
+    margin: 0;
+
+    /* 
+       Визуальное центрирование по вертикали внутри .page (285px).
+       Учитывая, что в HTML есть <br>, <center> и другие блоки, 
+       нам нужно добавить отступ сверху, чтобы текст не прилипал к потолку.
+    */
+}
+
+
+/* Уточняем селектор, чтобы перебить возможные специфичные стили */
+div#networkError .errortext {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+
+.turboX{
+    font-family: "Play", sans-serif;;
+    font-weight: 300;
+    font-size: 1.0em;
+    padding:  0 0 0 0; 
+    color: rgb(51,51,51);
+    font-style: normal;
+    background:rgba(15,15,77,0.0);
+    height:100%;
+}
+.inputId{
+    outline: none;
+    padding-left: 34px;
+    padding-top: 14px;
+    padding-bottom: 14px;
+    resize: none;
+    font-family: "Play", sans-serif;;
+    font-style: normal;
+    width: 374px;
+    border: none;
+    font-size: 21px;
+    color: rgb(147, 225, 255);
+    background-color: rgba(14,8,77,0.0);
+    font-weight: 300;
+    display:block;
+    vertical-align:bottom;
+    margin:0px;
+}
+
+.inputId::placeholder {
+    font-style: normal;
+    opacity: 1;
+    color: rgba(88,85,255);
+}
+
+.link{
+    cursor: pointer;
+    color: rgb(200,200,255);
+    text-decoration: none;
+}
+
+.heading {
+    font-family: 'GOST type B';
+    font-size:1.7em;
+    padding-bottom:0px;
+    padding-top:0px;
+    text-decoration: none;
+    font-weight:400;
+    font-style:italic;
+    line-height:1.4em;
+    color: rgb(85, 225, 255);
+}
+
+
+.zeroCredit {
+    width: 74px;
+    height: auto;
+    margin-left:0px;
+    margin-right:0px;
+    text-align:center;
+}
+.link:hover{
+    cursor: pointer;
+    color:rgb(147, 225, 255);
+}
+.linkBack{
+    cursor: pointer;
+    color: rgb(185,185,255);
+    text-decoration: none;
+}
+.linkBack:hover{
+    cursor: pointer;
+    color:rgb(185,225,255);
+}
+.mainlink{
+    cursor: pointer;
+    color: rgb(35,185,205);
+    text-decoration: none;
+}
+.mainlink:hover{
+    cursor: pointer;
+    color:rgb(147, 225, 255);
+}
+.excite {
+    opacity: 0.545;
+    cursor: pointer;
+    font-size:1.25em;
+    color:rgb(147, 225, 255);
+    line-height:32px;
+}
+.buyLine {
+    opacity: 0;
+    position: relative;
+    top: -10px;
+}
+.headline{
+    color: rgb(147, 225, 255);
+    font-weight: 300;
+}    
+.bg {
+    margin: 0 0 0 0;
+    padding: 0 0 0 0;
+    background-color:rgb(14, 14, 55);
+}
+
+#overlay {
+  position: fixed; /* Sit on top of the page content */
+  display: none; /* Hidden by default */
+  width: 100%; /* Full width (cover the whole page) */
+  height: 100%; /* Full height (cover the whole page) */
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255,255,255,0.95); /* Black background with opacity */
+  z-index: 35; /* Specify a stack order in case you're using a different order for other elements */
+  cursor: pointer; /* Add a pointer on hover */
+}
+
+#warning{
+  position: absolute;
+  margin-top: 280px;
+  left: 50%;
+  font-size: 25px;
+  transform: translate(-50%,-50%);
+ -ms-transform: translate(-50%,-50%);
+}
+
+#mainFooter{
+  font-size: 18px;
+  line-height: 24px;
+}
+
+.content {
+  margin: auto;
+  width: 100%;
+  padding-top: 0px;
+  overflow-wrap: break-word;
+  font-size:1.7em;
+}
+.cv_item {
+  margin: 0px 0px 0px 0px;
+  padding: 25px 25px 25px 25px;
+  width: 100%;
+  display: inline-block;
+}
+.cv_left {
+  width: 34%;
+  float:left;
+  color: rgb(175, 175, 225);
+  line-height: 34px;
+}
+.cv_right {
+  width: 60%;
+  float: right;
+  line-height: 34px;
+  color: rgb(147, 225, 255);
+}
+.row {
+  margin-top:0px;
+}
+/* Clear floats after the columns */
+.row:after {
+  content: "";
+  display: table;
+  clear: both;
+  flex:1;
+}
+.footer {
+  color:rgb(220,220,255);
+  position: absolute;
+  top: 575px;
+  width: 100%;
+  line-height:1.8em;
+  font-size:1.0em;
+}
+.basement {
+  position: absolute;
+  bottom: 0px;
+  left:0px;
+  margin:auto;
+  width: 99%;
+}
+.backup {
+  display:none;
+  left:calc(50% - 244px);
+  top:240px;
+  line-height: 44px;
+  height: 44px;
+  position:absolute;
+  /*width:440px;
+  margin: auto;*/
+  font-size:2.8em;
+  z-index:15;
+  opacity: 0.9
+}
+.carbon_loader {
+  z-index:10;
+  position: absolute;
+  top:285px;
+  left: calc(50% - 34px) ;
+  width: 69px;
+  margin: auto;
+  height: 70px;
+  border: 8px dotted rgba(148, 225, 255, 0.5);
+  border-radius: 50%;
+  display: block;
+  box-sizing: border-box;
+  animation: rotation 2s linear infinite;
+}
+/* The switch - the box around the slider */
+#settingsBox {
+  display: none;
+}
+.settings {
+  position: absolute;
+  top: 28px;
+  right:71px;
+  color: rgba(187,187,255, 0.77);
+  font-size:1.5em;
+}
+
+.switch {
+  font-size: 17px;
+  position: absolute;
+  top: 71px;
+  right:71px;
+  display: inline-block;
+  width: 3.5em;
+  height: 2em;
+}
+
+/* Hide default HTML checkbox */
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* The slider */
+.slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  border: 2px solid rgba(147, 225, 255,0.4);
+  border-radius: 50px;
+  transition: all 0.4s cubic-bezier(0.175, 0.8, 0.32, 1.275);
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 1.4em;
+  width: 1.4em;
+  left: 0.2em;
+  bottom: 0.2em;
+  background-color: rgba(87, 225, 255, 0.41);
+  border-radius: inherit;
+  transition: all 0.4s cubic-bezier(0.23, 1, 0.320, 1);
+}
+
+
+.switch input:checked + .slider {
+  box-shadow: 0 0 20px rgba(87, 225, 255, 0.77);
+  border: 2px solid rgba(87, 225, 255, 0.77);
+
+}
+
+.switch input:checked + .slider:before {
+  background-color: rgba(187,225,255, 0.77);
+  transform: translateX(1.5em);
+}
+
+
+
+
+#title {
+  color: rgba(87, 225, 255);
+}
+
+
+
+
+
+
+
+
+
+
+
+#hostileOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(7, 34, 77, 0.85); /* Глубокий синий в стиле Shustree */
+    display: none; /* Скрыт по умолчанию */
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    padding: 20px;
+    box-sizing: border-box;
+    font-family: 'Play', sans-serif;
+}
+
+.hostile-content {
+    background: rgb(15,25,55);
+    padding: 25px;
+    text-align: center;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    color: rgb(147, 225, 255);
+}
+
+.hostile-content h2 {
+    color: rgb(255,100,155); /* Красный акцент для внимания */
+    margin-top: 0;
+}
+
+.hostile-content p {
+    font-size: 1.5em;
+    line-height: 1.7;
+}
+
+.sub-text {
+    font-size: 1.1em;
+    opacity: 0.8;
+    font-style: italic;
+}
+
+
+
+@keyframes rotation {
+  0% {
+  transform: rotate(0deg);
+}
+ 100% {
+  transform: rotate(360deg);
+  }
+}
+@media only screen and (max-height: 733px) {
+  .basement {
+    position: fixed;
+    top: 701px;
+    bottom: 0px;
+    left:0px;
+    width: 100%;
+  }
+}
+
+@media only screen and (max-width: 777px) {
+  #title {
+    display: none;
+  }
+}
+
+
