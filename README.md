@@ -106,12 +106,13 @@ chrome.webRequest.onAuthRequired.addListener(
 
 __Installation & Developer Setup__  
     1. Clone this repository:  
-       ```Bash
-       git clone https://github.com/perfectwavecheez-dotcom/shustree-chrome-browser-extension.git```
+       ``````bash
+   git clone [https://github.com/magavolkov/shustree-chrome-browser-extension.git](https://github.com/magavolkov/shustree-chrome-browser-extension.git)
+       ```
     2. Navigate to Chrome's Extension Manager by typing chrome://extensions/ in the URL bar.  
     3. Enable Developer mode (toggle in the top-right corner).  
     4. Click Load unpacked in the top-left corner.  
-    5. Select the 1.5.9_DEV_SHUSTREE_TLS_GITHUB directory.  
+    5. Select the root directory of the cloned repository (shustree-chrome-browser-extension).  
     6. Open your browser console or the extension service worker background console to view active routing outputs.  
 
 __License__  
