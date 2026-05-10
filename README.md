@@ -5,7 +5,7 @@
 * **Website:** [shustree.ru](https://shustree.ru)
 
 
-A lightweight, highly customizable Google Chrome extension designed for advanced routing of browser traffic. This version (1.5.9_DEV_SHUSTREE_TLS_GITHUB) is a production-ready release showcasing advanced chrome.proxy API implementations, tailored for developers who need robust routing control.  
+A lightweight, highly customizable Google Chrome extension designed for advanced routing of browser traffic. This version (1.5.9) is a production-ready release showcasing advanced chrome.proxy API implementations, tailored for developers who need robust routing control.  
 
 __Features & Russian Network Specifics__  
     • Multi-Protocol Support: Configure and route traffic seamlessly through HTTP, HTTPS, and SOCKS5 proxy protocols.  
