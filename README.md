@@ -39,7 +39,8 @@ const httpConfig = {
 
 chrome.proxy.settings.set({ value: httpConfig, scope: "regular" }, () => {
   console.log("HTTP Proxy configured successfully.");
-});```
+});
+```
 
 __2. HTTPS (Secure) Proxy Configuration__  
 Encrypts the connection handshake and payload between your browser and the proxy server using TLS/SSL.  
@@ -58,7 +59,8 @@ const httpsConfig = {
 
 chrome.proxy.settings.set({ value: httpsConfig, scope: "regular" }, () => {
   console.log("Secure HTTPS Proxy configured successfully.");
-});```
+});
+```
 
 __3. SOCKS5 Configuration__  
 Routes traffic through a SOCKS5 proxy server. (Note: Remember the blocking restrictions inside Russia).  
@@ -77,7 +79,8 @@ const socks5Config = {
 
 chrome.proxy.settings.set({ value: socks5Config, scope: "regular" }, () => {
   console.log("SOCKS5 Proxy configured successfully.");
-});```
+});
+```
 
 __4. Proxy Authentication Handling (Manifest V3)__  
 If your Dante or Squid proxies require authentication, the extension handles background proxy credentials via the chrome.webRequest API.  
@@ -96,7 +99,8 @@ chrome.webRequest.onAuthRequired.addListener(
   },
   { urls: ["<all_urls>"] },
   ["blocking"] // Required for credential injection
-);```
+);
+```
 
 
 __Installation & Developer Setup__  
