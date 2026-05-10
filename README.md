@@ -108,7 +108,7 @@ __Installation & Developer Setup__
     1. Clone this repository:  
        ```bash
    git clone https://github.com/magavolkov/shustree-chrome-browser-extension.git
-       ```
+       ```  
     2. Navigate to Chrome's Extension Manager by typing chrome://extensions/ in the URL bar.  
     3. Enable Developer mode (toggle in the top-right corner).  
     4. Click Load unpacked in the top-left corner.  
