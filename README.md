@@ -19,7 +19,8 @@ Extension Configuration Examples
 The core of the routing relies on Chrome's chrome.proxy.settings API. Below are code templates demonstrating how to structure the internal JSON configuration parameters within background.js (or your service worker) for different proxy setups.
 1. HTTP Proxy Configuration
 Routes all standard HTTP and fallback traffic through an unencrypted HTTP proxy server.
-JavaScript
+
+```JavaScript
 const httpConfig = {
   mode: "fixed_servers",
   rules: {
@@ -35,6 +36,8 @@ const httpConfig = {
 chrome.proxy.settings.set({ value: httpConfig, scope: "regular" }, () => {
   console.log("HTTP Proxy configured successfully.");
 });
+```
+
 2. HTTPS (Secure) Proxy Configuration
 Encrypts the connection handshake and payload between your browser and the proxy server using TLS/SSL.
 JavaScript
