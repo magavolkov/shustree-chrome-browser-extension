@@ -1,0 +1,582 @@
+
+
+
+// =========== GLOBAL CONSTS and VARS ==========================================================================================================================
+
+
+const apiUrl 		= "https://shustree.ru:17762/carbonvpnapi/";
+const apiPayUrl 		= "https://shustree.ru:17762/carbonvpnpayapi/";
+const apiIp 			= "https://shustree.ru:17762/carbonvpnapi/ip_auth";
+const apiIfNotHostile = "https://shustree.ru:17762/carbonvpnapi/if_safe";
+const apiSettings 	= "https://shustree.ru:17762/carbonvpnapi/settings";
+const strTime 		= Date.now().toString();
+const autoConnectCheckBox = document.getElementById('autoConnectChoice');
+autoConnectCheckBox.checked = true;
+
+
+// ------------ global vars coming from CarbonSERVER ------------------------------------------------------------------------------------------------------------------------------------------------------
+// in case of a server crush:
+var cookieName 		= "carbonvpn";
+var proxyIp 			= "shustree.ru"
+var htmlAboutInject 	= '<br><br><br><div style="text-align:left;margin-left:31px;width:100%;"><a class="mainlink" href="https://carbonvpn.tech" target="_blank" style="text-decoration: none;" rel="noopener noreferrer"><h1>Carbon-VPN.TECH</h1></a></div><br><br><br>';
+var config 			= {
+  mode: "fixed_servers",
+  rules: {
+    singleProxy: {
+      host: "shustree.ru", 
+      port: 762
+    },
+  }
+};
+
+
+var configFree = config;
+
+
+//---------- local vars ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+var logo 			= document.createElement("img");
+var enabler 			= document.createElement("img");
+var basement 		= document.createElement("img");
+var connectStatus 	= 'disconnected';
+var currentIp 		= "";
+var carbonUid 		= "";
+var carbonBalance 	= 0;
+var carbonStatus 	= "";
+var currentUrl 		= document.URL;
+var curUrl 			= '';
+var carbonCookie 	= getCookie("carbonvpn");
+chrome.storage.sync.set({ 'carbonCookie': carbonCookie });
+var tracked 			= false;
+var apiRequest 		= new Object();
+var apiPayRequest 	= new Object();
+var apiChoiceRequest = new Object();
+var userAction 		= "activation";
+var planSelected 		= 3;
+var defaultTimeOut 	= 149; //ms
+var free_msecs 		= 317777;
+var free_descr 		= "5 минут";
+var uxtx 			= '';
+var price1 			= "250";
+var price3 			= "500";
+var price12 			= "1500";
+var toNotify 			= false;
+var autoShow 		= true;
+var settingsShow 	= false;
+var ifHostile 			= false;
+
+
+
+
+
+
+// =========== TRACKING INSTALLS and ENABLES / DISABLES ========================================================================================================
+
+
+
+function getUserAgent() {
+    const userAgent = window.navigator.userAgent;
+    chrome.storage.sync.set({ 'userAgent': userAgent });
+    return userAgent;
+}
+
+
+
+// to set a carbonvpn Cookie- expiring in 1000 days
+function setCookie(cvalue) {
+    const d 			= new Date();
+    d.setTime(d.getTime() + (10000*24*60*60*1000));
+    let expires 		= "expires="+ d.toUTCString();
+    document.cookie 	= "carbonvpn" + "=" + cvalue + ";" + expires + ";path=/";
+}
+
+
+
+// to get a specific Cookie
+function getCookie(cname) {
+  let name = cname + "=";
+  let decodedCookie = decodeURIComponent(document.cookie);
+  let ca = decodedCookie.split(';');
+  for(let i = 0; i <ca.length; i++) {
+    let c = ca[i];
+    while (c.charAt(0) == ' ') {
+      c = c.substring(1);
+    }
+    if (c.indexOf(name) == 0) {
+      var x = c.substring(name.length, c.length);
+      return x;
+      
+    }
+  }
+  return "";
+}
+
+
+
+
+
+
+
+// =========== PROXYING FUNCTIONS ======================================================================================================================
+
+
+
+function checkConnect(x) {
+  if ( x == "connected" ) {
+    userAction 											= "disable";
+  } else {
+    userAction 											= "enable";
+  };
+}
+
+
+
+function getIp(x) {
+    fetch(apiIp)
+      .then(response => response.json())
+      .then(data => {
+        console.log('Your public IP address is:', data.ip);
+        document.getElementById('shustreeIP').innerHTML  = data.ip;
+        if (x == 'c') {
+          document.getElementById('shustreeIP').style.color  = 'rgb(149,225,255)';
+        } else {
+          document.getElementById('shustreeIP').style.color  = 'rgb(175,175,255)';
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching IP:', error);
+      });
+}
+
+
+
+
+function DEPRconnect(config) {  
+  chrome.proxy.settings.set(
+      {value: config, scope: 'regular'},
+      function() { getIp('c'); }
+  );
+  connectStatus = 'connected';
+  enablerView('enabled');
+};
+
+
+async function connect(config) {  
+    // 1. Устанавливаем настройки прокси
+    chrome.proxy.settings.set(
+        {value: config, scope: 'regular'},
+        async function() { 
+            // 2. Сразу после установки проверяем, не перехватили ли нас
+            try {
+                const response = await fetch(apiIfNotHostile);
+                const data = await response.json(); // Получаем весь объект {"if_safe": true}
+    
+                // Извлекаем конкретное значение по ключу if_safe
+                const isSafe = data.if_safe;
+                //console.log(isSafe);
+
+                if (isSafe === true) {
+                    // Все хорошо, продолжаем
+                    getIp('c');
+                    connectStatus = 'connected';
+                    enablerView('enabled');
+                } else {
+                    // Соединение перехвачено сторонним софтом
+                    showHostileOverlay();
+                }
+            } catch (error) {
+                console.error("Ошибка проверки безопасности:", error);
+                // В случае ошибки API решайте сами: блокировать или пропускать.
+                // Для надежности можно вызвать обычный коннект:
+                getIp('c');
+                connectStatus = 'connected';
+                enablerView('enabled');
+            }
+        }
+    );
+}
+
+
+
+
+function disconnect() {
+    chrome.proxy.settings.clear({scope:'regular'},()=>console.log('Proxy Removed'));
+    connectStatus = 'disconnected';
+    getIp('x');
+    enablerView('disabled');
+};
+
+
+
+
+
+// =========== UTILITY FUNCTIONS ========================================================================================================================
+
+
+
+function makeid(length) {
+    let result 						= '';
+    const characters 				= 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const charactersLength 		= characters.length;
+    let counter = 0;
+    while (counter < length) {
+      result += characters.charAt(Math.floor(Math.random() * charactersLength));
+      counter += 1;
+    }
+    return result;
+};
+
+
+
+
+
+
+
+
+
+// =========== VIEWS FUNCTIONS =========================================================================================================================
+
+
+function getPrice(p) {
+  planSelected = p;
+  var allPayButtons = document.getElementsByClassName("excite"); // get all the pay buttons
+  for (let index = 0; index < allPayButtons.length; ++index) {
+    const element = allPayButtons[index];
+    element.style.opacity = 0.545;
+  };
+  var allBuyByes = document.getElementsByClassName("buyLine"); // get all the pay buttons
+  for (let index = 0; index < allBuyByes.length; ++index) {
+    const element = allBuyByes[index];
+    element.style.opacity = 0;
+  };
+  var c = 'buy' + p.toString();
+  var d = 'buy'+ p.toString() + 'png';
+  document.getElementById(c).style.opacity = 1;
+  document.getElementById(d).style.opacity = 0.47;
+  document.getElementById("inputEmail").focus();
+};
+
+
+
+function itemDisable(item) {
+    item.style.display 				= "none";
+};
+
+
+
+function getTrialHumanized(h) {
+  var hm = Math.floor( h/60000 );
+  var hf = hm % 100;
+  if ( hf == 1 && h > 0 ) { 
+    hfr = hf.toString() + ' минута';
+  } else if ( ( hf == 2 || hf == 3 || hf == 4 ) && h > 0 ) {
+    hfr = hf.toString() + ' минуты';
+  } else if ( h > 0 ) {
+    hfr = hf.toString() + ' минут';
+  } else {
+    hfr = '0 минут';
+  };
+  return hfr.toString(); 
+}
+
+
+
+function shutDownAll() {
+    var allPages = document.getElementsByClassName("page"); // Получаем все странички
+    for (let index = 0; index < allPages.length; ++index) {
+      const element = allPages[index];
+      itemDisable(element);
+    };
+    document.getElementById("getMain").style.display 	= "none";
+};
+
+
+
+function view(page) {
+    var allPages = document.getElementsByClassName("page"); // Получаем все странички
+    for (let index = 0; index < allPages.length; ++index) {
+      const element = allPages[index];
+      itemDisable(element);
+    }
+    var currentPage 				= document.getElementById(page);
+    currentPage.style.display 		= "block";
+    carbonLoader("hide");
+    fadeIn(currentPage, 1000, 'flex');
+};
+
+
+
+function loaderShow() {
+    document.getElementById('carbon_loader').style.display 	= "block";
+}
+
+function carbonLoader(x) {
+  const loader = document.getElementById("carbon_loader");
+  if (!loader) return;
+  if (x == "show") {
+    shutDownAll();
+    setTimeout(loaderShow, 100);
+  } else if (x == "hide") {
+    document.getElementById('carbon_loader').style.display 	= "none";
+  };
+}
+
+
+
+function warnOn() {
+  document.getElementById('inputEmail').value  				= '';
+  document.getElementById("inputEmail").placeholder 		= "укажите корректный email..."; 
+  document.getElementById("inputEmail").focus();
+}
+
+
+
+function getFooter(zx) {
+  if ( zx == "off" ) {
+    document.getElementById("footer").style.display = "none";
+  } else {
+    document.getElementById("footer").style.display = "block";
+  } 
+}
+
+
+
+
+function rechargeId() {
+  var restoredId = document.getElementById('inputCarbonId').value;
+  postRestoredId(restoredId);
+}
+
+
+
+
+async function enablerView(xy) {
+  let enablerPromise 					= new Promise(function(resolve) {
+    if (xy == 'enabled') {
+      // style logo
+      logo.src = chrome.runtime.getURL("img/Shustree.png");
+      logo.style.opacity = 1;
+      document.getElementById("logo").appendChild(logo);
+      // style enabler
+      enabler.src = chrome.runtime.getURL("img/enabler_on.png");
+      document.getElementById("enabler").appendChild(enabler);
+      // style basement
+      basement.src = chrome.runtime.getURL("img/basement_enhanced.png");
+      document.getElementById('titleShustree').style.opacity = 1;
+      document.getElementById("basement").appendChild(basement);
+      document.getElementById('basement').style.opacity 	= 1;
+    } else {
+      // style logo
+      logo.src = chrome.runtime.getURL("img/Shustree_vertical.png");
+      logo.style.opacity = 0.545;
+      document.getElementById("logo").appendChild(logo);
+      // style enabler
+      enabler.src = chrome.runtime.getURL("img/enabler_off.png");
+      document.getElementById("enabler").appendChild(enabler);
+      // style basement
+      basement.src = chrome.runtime.getURL("img/basement_narrowed.png");
+      document.getElementById('titleShustree').style.opacity = 0.545;
+      document.getElementById("basement").appendChild(basement);
+      document.getElementById('basement').style.opacity 	= 0.887;
+    }
+  });
+  await enablerPromise;
+};
+
+
+
+async function fadeIn(el, timeout, display) {
+  let viewPromise 					= new Promise(function(resolve) {
+    el.style.opacity = 0;
+    el.style.display = display || 'block';
+    el.style.transition = `opacity ${timeout}ms`;
+    setTimeout(() => {
+      el.style.opacity = 1;
+    }, 10);
+  });
+  await viewPromise;
+};
+
+
+
+const fadeOut = (el, timeout) => {
+  el.style.opacity = 1;
+  el.style.transition = `opacity ${timeout}ms`;
+  el.style.opacity = 0;
+  setTimeout(() => {
+    el.style.display = 'none';
+  }, timeout);
+};
+
+
+
+
+// Функция создания оверлея о враждебном расширении
+function showHostileOverlay() {
+    // Создаем элемент оверлея, если его еще нет
+    let overlay = document.getElementById('hostileOverlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'hostileOverlay';
+        overlay.innerHTML = `
+            <div class="hostile-content">
+                <h2>Внимание!</h2>
+                <p>Ваше интернет-соединение контролирует стороннее расширение.</p>
+                <p class="sub-text">Обычно это расширения типа "разгони Ютуб", бесплатные VPN или блокировщики рекламы.</p>
+                <p>Для нормальной работы Shustree отключите или удалите их и попробуйте снова.</p>
+                <button class="okCarbon" id="closeOverlayBtn">ОК</button>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        
+        document.getElementById('closeOverlayBtn').onclick = () => {
+            overlay.style.display = 'none';
+            // Можно также вызвать сброс прокси здесь, если нужно
+        };
+    }
+    overlay.style.display = 'flex';
+}
+
+
+
+// =========== CONTROLLER & DATA MODELS FUNCTIONS ===================================================================================================
+
+function getEmail() {
+  var email 	= document.getElementById('inputEmail').value;
+  if (validateEmail(email)) {  
+    document.getElementById("getMain").style.display 	= "none";
+    carbonLoader("show");
+  } else {
+    warnOn();
+  }
+  return email;
+}
+
+
+// 
+async function redirectPayment(paymentUrl) {
+  let redirectPromise 				= new Promise(function(resolve) {
+    setTimeout(function () {
+        carbonLoader("hide");
+        window.open(paymentUrl, '_blank');
+        view("carbonMain");
+    }, 545);
+  });
+  await redirectPromise;
+};
+
+
+const validateEmail = (email) => {
+  return email.match(
+    /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+  );
+};
+
+
+
+function openUrl(xUrl) {
+  carbonLoader("show");
+  setTimeout(function () {
+        carbonLoader("hide");
+        window.open(xUrl, '_blank');
+        view("carbonMain");
+  }, 2762);  
+}
+
+
+
+// send USER DATA to carbonvpn server and get all the data needed
+async function postPaymentRequest(m) {
+  disconnect();
+  let postPayPromise 					= new Promise(function(resolve) {
+    apiPayRequest["extension"] 		= "CARBON";
+    apiPayRequest["uid"] 				= carbonUid;
+    apiPayRequest["carbonCookie"] 		= carbonCookie;
+    apiPayRequest["email"] 			= getEmail();
+    apiPayRequest["periodSubscribed"] 	= m;
+    var xhr 							= new XMLHttpRequest();
+    xhr.open('POST', apiPayUrl, true);
+    xhr.setRequestHeader('Content-type', 'text/plain');  
+    xhr.onload 						= function () {
+      var respJson 						= JSON.parse(this.response);
+      var paymentUrl 					= respJson["payment_url"];
+      redirectPayment(paymentUrl);
+    };
+    xhr.send(JSON.stringify(apiPayRequest));
+  });
+  await postPayPromise;
+};
+
+
+
+async function trialUpdate(t) {
+  let trialPromise 					= new Promise(function(resolve) {
+    chrome.storage.sync.set({ 'carbonBalanceExpiration': t });
+  });
+  await trialPromise;
+};
+
+
+
+// send USER DATA to restore access
+async function postRestoredId(restoredId) {
+  let postRestorePromise 				= new Promise(function(resolve) {
+    apiPayRequest["extension"] 		= "CARBON";
+    apiPayRequest["uid"] 				= carbonUid;
+    apiPayRequest["restoredUid"] 		= restoredId;
+    apiPayRequest["carbonCookie"] 		= carbonCookie;
+    var xhr 							= new XMLHttpRequest();
+    xhr.open('POST', apiPayUrl + 'recharge', true);
+    xhr.setRequestHeader('Content-type', 'text/plain');  
+    xhr.onload 						= function () {
+      var respJson 						= JSON.parse(this.response);
+      var response 						= respJson["status"];
+      if (response == 'success') {
+        carbonUid = restoredId;
+        postToCarbonAPI(true);
+        getFooter("on");
+        document.getElementById("getMain").style.display 	= "none";
+      } else {
+        document.getElementById('errorId').style.display 	= "block";
+        document.getElementById("inputCarbonId").focus();
+      }
+    };
+    xhr.send(JSON.stringify(apiPayRequest));
+  });
+  await postRestorePromise;
+};
+
+
+
+
+// send USER choice on auto swith on
+async function postAutoConnectChoice(autoChoice, start) {
+  let postAutoChoicePromise 			= new Promise(function(resolve) {
+    apiChoiceRequest["extension"] 		= "CARBON";
+    apiChoiceRequest["choice"] 			= autoChoice;
+    apiChoiceRequest["carbonCookie"] 	= carbonCookie;
+    var xhr 							= new XMLHttpRequest();
+    xhr.open('POST', apiSettings, true);
+    xhr.setRequestHeader('Content-type', 'text/plain');  
+    xhr.onload 						= function () {
+      var respJsonA 					= JSON.parse(this.response);
+      var responseA 					= respJsonA["auto_status"];
+      autoShow 						= responseA;
+      if (responseA == true) {
+        autoConnectCheckBox.checked = true;
+      } else {
+        autoConnectCheckBox.checked = false;
+      };
+      if ( start === true ) {
+        postToCarbonAPI(responseA);
+      }
+    };
+    xhr.send(JSON.stringify(apiChoiceRequest));
+  });
+  await postAutoChoicePromise;
+};
+
+
+
+
+
