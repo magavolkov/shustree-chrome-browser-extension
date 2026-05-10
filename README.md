@@ -1,8 +1,8 @@
 # shustree-chrome-browser-extension
 ## Shustree Chrome Browser Extension (v1.5.9) 
 
-Chome Store link: https://chromewebstore.google.com/detail/shustree/fjancimbiajbfljkoggkchelcfmknkoo\
-Web-site: https://shustree.ru
+* **Chrome Web Store:** [Chrome Extension Shustree](https://chromewebstore.google.com/detail/shustree/fjancimbiajbfljkoggkchelcfmknkoo)
+* **Website:** [shustree.ru](https://shustree.ru)
 
 
 A lightweight, highly customizable Google Chrome extension designed for advanced routing of browser traffic. This version (1.5.9_DEV_SHUSTREE_TLS_GITHUB) is a production-ready release showcasing advanced chrome.proxy API implementations, tailored for developers who need robust routing control.\\\
