@@ -39,13 +39,11 @@ const httpConfig = {
 
 chrome.proxy.settings.set({ value: httpConfig, scope: "regular" }, () => {
   console.log("HTTP Proxy configured successfully.");
-});
-```
+});```
 
 __2. HTTPS (Secure) Proxy Configuration__  
 Encrypts the connection handshake and payload between your browser and the proxy server using TLS/SSL.  
-```
-JavaScript
+```JavaScript
 const httpsConfig = {
   mode: "fixed_servers",
   rules: {
@@ -60,13 +58,11 @@ const httpsConfig = {
 
 chrome.proxy.settings.set({ value: httpsConfig, scope: "regular" }, () => {
   console.log("Secure HTTPS Proxy configured successfully.");
-});
-```
+});```
 
 __3. SOCKS5 Configuration__  
 Routes traffic through a SOCKS5 proxy server. (Note: Remember the blocking restrictions inside Russia).  
-```
-JavaScript
+```JavaScript
 const socks5Config = {
   mode: "fixed_servers",
   rules: {
@@ -81,13 +77,11 @@ const socks5Config = {
 
 chrome.proxy.settings.set({ value: socks5Config, scope: "regular" }, () => {
   console.log("SOCKS5 Proxy configured successfully.");
-});
-```
+});```
 
 __4. Proxy Authentication Handling (Manifest V3)__  
 If your Dante or Squid proxies require authentication, the extension handles background proxy credentials via the chrome.webRequest API.  
-```
-JavaScript
+```JavaScript
 // In your background.js
 chrome.webRequest.onAuthRequired.addListener(
   (details) => {
@@ -102,16 +96,13 @@ chrome.webRequest.onAuthRequired.addListener(
   },
   { urls: ["<all_urls>"] },
   ["blocking"] // Required for credential injection
-);
-```
+);```
 
 
 __Installation & Developer Setup__  
     1. Clone this repository:  
-       ```
-       Bash
-       git clone https://github.com/perfectwavecheez-dotcom/shustree-chrome-browser-extension.git
-       ```
+       ```Bash
+       git clone https://github.com/perfectwavecheez-dotcom/shustree-chrome-browser-extension.git```
     2. Navigate to Chrome's Extension Manager by typing chrome://extensions/ in the URL bar.  
     3. Enable Developer mode (toggle in the top-right corner).  
     4. Click Load unpacked in the top-left corner.  
