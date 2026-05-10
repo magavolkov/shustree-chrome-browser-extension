@@ -16,7 +16,7 @@ __Features & Russian Network Specifics__
 __Recommended Server-Side Backends__  
 To pair with this extension, you can easily deploy your own proxy servers using standard Linux packages:\
     • HTTP/HTTPS: Use Squid Proxy — a caching proxy for the Web supporting HTTP/HTTPS with robust access control.\
-    • SOCKS5: Use Dante — a high-performance, industry-standard SOCKS server (ideal for setups outside of Russian DPI-restricted zones).\\\
+    • SOCKS5: Use Dante — a high-performance, industry-standard SOCKS server (ideal for setups outside of Russian DPI-restricted zones).\
 
 __Extension Configuration Examples__  
 The core of the routing relies on Chrome's chrome.proxy.settings API. Below are code templates demonstrating how to structure the internal JSON configuration parameters within background.js (or your service worker) for different proxy setups.  
