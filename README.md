@@ -42,7 +42,7 @@ chrome.proxy.settings.set({ value: httpConfig, scope: "regular" }, () => {
 });
 ```
 
-\__2. HTTPS (Secure) Proxy Configuration__\
+__2. HTTPS (Secure) Proxy Configuration__\
 Encrypts the connection handshake and payload between your browser and the proxy server using TLS/SSL.
 ```
 JavaScript
@@ -63,7 +63,7 @@ chrome.proxy.settings.set({ value: httpsConfig, scope: "regular" }, () => {
 });
 ```
 
-\__3. SOCKS5 Configuration__\
+__3. SOCKS5 Configuration__\
 Routes traffic through a SOCKS5 proxy server. (Note: Remember the blocking restrictions inside Russia).\
 ```
 JavaScript
@@ -84,7 +84,7 @@ chrome.proxy.settings.set({ value: socks5Config, scope: "regular" }, () => {
 });
 ```
 
-\__4. Proxy Authentication Handling (Manifest V3)__\
+__4. Proxy Authentication Handling (Manifest V3)__\
 If your Dante or Squid proxies require authentication, the extension handles background proxy credentials via the chrome.webRequest API.\
 ```
 JavaScript
@@ -106,8 +106,8 @@ chrome.webRequest.onAuthRequired.addListener(
 ```
 
 
-\__Installation & Developer Setup__\
-    1. Clone this repository:\
+__Installation & Developer Setup__\
+    1. Clone this repository:  
        ```
        Bash
        git clone https://github.com/perfectwavecheez-dotcom/shustree-chrome-browser-extension.git
@@ -117,5 +117,6 @@ chrome.webRequest.onAuthRequired.addListener(
     4. Click Load unpacked in the top-left corner.\
     5. Select the 1.5.9_DEV_SHUSTREE_TLS_GITHUB directory.\
     6. Open your browser console or the extension service worker background console to view active routing outputs.\
-License
+
+__License__  
 This project is open-sourced under the MIT License. Feel free to modify, simplify, or scale the API logic to match your custom proxy architectures.
