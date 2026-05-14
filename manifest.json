@@ -1,6 +1,8 @@
 {
-    "name": "Shustree",
-    "version": "1.5.9",
+    "manifest_version": 3,
+    "name": "__MSG_appName__",
+    "version": "1.7.2",
+    "default_locale": "en",
     "permissions": [
         "proxy",
         "tabs",
@@ -13,8 +15,7 @@
         "*://shustree.ru/*",
         "<all_urls>"
     ],
-    "description": "Легальное решение для доступа к YouTube, Gemini, ChatGPT, WhatsApp",
-    "manifest_version": 3,
+    "description": "__MSG_appDesc__",
     "icons": {
          "16": "img/shustree16.png",
          "32": "img/shustree32.png",
@@ -26,7 +27,7 @@
     },
     "action":{
         "default_popup": "shustree.html",
-        "default_title": "Стабильный доступ к YouTube, Gemini, ChatGPT и другим сайтам"
+        "default_title": "__MSG_defaultTitle__"
     },
     "content_security_policy": {
         "extension_pages": "script-src 'self'; object-src 'self';"

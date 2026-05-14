@@ -64,9 +64,133 @@ var toNotify 			= false;
 var autoShow 		= true;
 var settingsShow 	= false;
 var ifHostile 			= false;
+let isApiLoading 		= false;
+// Определяем язык интерфейса один раз при старте
+var uiLang = 'en';
+try {
+    const browserLang = chrome.i18n.getUILanguage().toLowerCase();
+    if (browserLang.startsWith('ru')) {
+        uiLang = 'ru';
+    }
+} catch (e) {
+    // Резервный вариант
+    const webLang = (navigator.language || 'en').toLowerCase();
+    if (webLang.startsWith('ru')) {
+        uiLang = 'ru';
+    }
+}
 
 
 
+const translationDictionary = {
+    // ---------------- Настройки ----------------
+    "autoTip": {
+        ru: "Подключаться автоматически",
+        en: "Connect automatically"
+    },
+
+    // ---------------- Страница СТАРТ (carbonStart) ----------------
+    "balanceLabelX": {
+        ru: "Баланс: ",
+        en: "Balance: "
+    },
+    "charge1Text": {
+        ru: "+ Пополнить",
+        en: "+ Top up"
+    },
+    "accessLabel": {
+        ru: "Доступ: ",
+        en: "Access: "
+    },
+    "andOtherSites": {
+        ru: "и другие сайты,",
+        en: "and other websites,"
+    },
+    "notBannedInRU": {
+        ru: "не запрещенные в РФ",
+        en: "unrestricted worldwide"
+    },
+
+    // ---------------- Страница Оплаты (carbonCash) ----------------
+    "buy1_duration": {
+        ru: "1 мес",
+        en: "1 mo"
+    },
+    "buy3_duration": {
+        ru: "3 мес",
+        en: "3 mo"
+    },
+    "buy12_duration": {
+        ru: "12 мес",
+        en: "12 mo"
+    },
+    "inputEmail": {
+        ru: "укажите email ...",
+        en: "enter email ..."
+    },
+    "payButtonText": {
+        ru: "Оплатить",
+        en: "Pay"
+    },
+
+    // ---------------- Страница Профиля (carbonMain) ----------------
+    "balanceLabelY": {
+        ru: "Баланс: ",
+        en: "Balance: "
+    },
+    "charge2Text": {
+        ru: "+ Пополнить",
+        en: "+ Top up"
+    },
+
+    // ---------------- Страница Ввода ID (carbonRestoreId) ----------------
+    "errorIdText": {
+        ru: "Указан не валидный ID",
+        en: "Invalid ID provided"
+    },
+    "inputCarbonId": {
+        ru: "оплаченный ID ...",
+        en: "paid ID ..."
+    },
+    "connectIdBtnText": {
+        ru: "Подключить ID",
+        en: "Connect ID"
+    },
+
+    // ---------------- Страница Ошибки (carbonError) ----------------
+    "errorBlockText": {
+        ru: `Ошибка подключения.<br>
+             Убедитесь, что в Вашем браузере отключены расширения, блокирующие работу других сервисов - обычно это расширения типа "разгони Ютуб", бесплатные VPN и блокировщики рекламы.<br>
+             Удалите или отключите их и попробуйте подключиться еще раз.<br><br>
+             По всем техническим вопросам <br>пишите на <a class="link" href="mailto:1@shustree.ru">1@shustree.ru</a>`,
+        en: `Connection error.<br>
+             Please make sure that extensions interfering with proxy routing (such as YouTube speed boosters, free VPNs, or ad blockers) are disabled in your browser.<br>
+             Remove or disable them and try to reconnect.<br><br>
+             For any technical support <br>contact <a class="link" href="mailto:1@shustree.ru">1@shustree.ru</a>`
+    },
+
+    // ---------------- Подвал (Footer) ----------------
+    "inputAlreadyPaid": {
+        ru: "Активировать оплаченный ID",
+        en: "Activate paid ID"
+    },
+    "techSupport1": {
+        ru: "Техподдержка (указывайте ID)",
+        en: "Support (include your ID)"
+    },
+    "legalDetails": {
+        ru: "Пользовательское соглашение",
+        en: "Terms of Service"
+    },
+    "inputEmailError": {
+        ru: "укажите корректный email...",
+        en: "enter a valid email..."
+    },
+    "about1": {
+        ru: "Инструкции",
+        en: "Instructions"
+    }
+};
 
 
 
@@ -200,9 +324,14 @@ async function connect(config) {
 
 
 function disconnect() {
-    chrome.proxy.settings.clear({scope:'regular'},()=>console.log('Proxy Removed'));
+    chrome.proxy.settings.clear({scope:'regular'}, () => {
+        console.log('Proxy Removed');
+        // Запрашиваем IP только после того, как Chrome подтвердил очистку прокси!
+        setTimeout(() => {
+            getIp('x');
+        }, 100);
+    });
     connectStatus = 'disconnected';
-    getIp('x');
     enablerView('disabled');
 };
 
@@ -236,6 +365,101 @@ function makeid(length) {
 
 // =========== VIEWS FUNCTIONS =========================================================================================================================
 
+/**
+ * Автоматически переводит весь интерфейс на английский, 
+ * если язык браузера отличается от русского.
+ */
+function DEPRapplyLocalization() {
+    try {
+        uiLang = chrome.i18n.getUILanguage().toLowerCase();
+        // Если интерфейс браузера русский — ничего не переводим (оставляем родной HTML)
+        if (uiLang.startsWith('ru')) {
+            return;
+        }
+    } catch (e) {
+        // Запасной вариант для обычного веб-контекста
+        const webLang = (navigator.language || 'en').toLowerCase();
+        if (webLang.startsWith('ru')) return;
+    }
+
+    // Рекурсивная функция обхода текстовых узлов (чтобы не ломать HTML-верстку и обработчики событий)
+    function translateNode(node) {
+        if (node.nodeType === Node.TEXT_NODE) {
+            let text = node.nodeValue.trim();
+            if (text && translationDictionary[text]) {
+                node.nodeValue = node.nodeValue.replace(text, translationDictionary[text]);
+            }
+        } else {
+            // Не переводим внутренности тегов <script> и <style>
+            if (node.nodeName !== 'SCRIPT' && node.nodeName !== 'STYLE') {
+                for (let child of node.childNodes) {
+                    translateNode(child);
+                }
+            }
+        }
+    }
+
+    // Запуск перевода со всего body
+    translateNode(document.body);
+    
+    // Переводим placeholder-атрибуты у инпутов (если они есть)
+    document.querySelectorAll('[placeholder]').forEach(element => {
+        const placeholderText = element.getAttribute('placeholder').trim();
+        if (translationDictionary[placeholderText]) {
+            element.setAttribute('placeholder', translationDictionary[placeholderText]);
+        }
+    });
+}
+
+
+function DEPR2applyLocalization() {
+    // Перебираем ключи (ID элементов) из нашего словаря
+    for (const elementId in translationDictionary) {
+        const element = document.getElementById(elementId);
+        
+        if (element) {
+            const translations = translationDictionary[elementId];
+            // Берем перевод для текущего uiLang, либо откатываемся на английский
+            const translatedText = translations[uiLang] || translations['en'];
+            
+            // Если у элемента есть свойство value (например, кнопки input), меняем его, иначе innerHTML
+            if (element.tagName === 'INPUT' && (element.type === 'button' || element.type === 'submit')) {
+                element.value = translatedText;
+            } else {
+                element.innerHTML = translatedText;
+            }
+        }
+    }
+}
+
+
+function applyLocalization() {
+    // Если язык 'ru' — ничего не делаем, HTML по умолчанию русский
+    if (uiLang === 'ru') {
+        return;
+    }
+
+    for (const elementId in translationDictionary) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            const translations = translationDictionary[elementId];
+            const translatedText = translations[uiLang] || translations['en'];
+
+            // 1. Если это инпут или текстовое поле (textarea), переводим placeholder
+            if (element.tagName === 'TEXTAREA' || element.tagName === 'INPUT') {
+                if (element.hasAttribute('placeholder')) {
+                    element.setAttribute('placeholder', translatedText);
+                }
+            } else {
+                // 2. Для обычных тегов обновляем внутреннее содержимое
+                element.innerHTML = translatedText;
+            }
+        }
+    }
+}
+
+
+
 
 function getPrice(p) {
   planSelected = p;
@@ -264,18 +488,22 @@ function itemDisable(item) {
 
 
 
-function getTrialHumanized(h) {
+function getTrialHumanized(h, uiLang) {
   var hm = Math.floor( h/60000 );
   var hf = hm % 100;
-  if ( hf == 1 && h > 0 ) { 
-    hfr = hf.toString() + ' минута';
-  } else if ( ( hf == 2 || hf == 3 || hf == 4 ) && h > 0 ) {
-    hfr = hf.toString() + ' минуты';
-  } else if ( h > 0 ) {
-    hfr = hf.toString() + ' минут';
+  if ( uiLang == 'ru' ) {
+	if ( hf == 1 && h > 0 ) { 
+	    hfr = hf.toString() + ' минута';
+	} else if ( ( hf == 2 || hf == 3 || hf == 4 ) && h > 0 ) {
+	    hfr = hf.toString() + ' минуты';
+	} else if ( h > 0 ) {
+	    hfr = hf.toString() + ' минут';
+	} else {
+	    hfr = '0 минут';
+	};
   } else {
-    hfr = '0 минут';
-  };
+  	hfr = hf.toString() + ' min';
+  }
   return hfr.toString(); 
 }
 
@@ -293,6 +521,7 @@ function shutDownAll() {
 
 
 function view(page) {
+    carbonLoader("hide");
     var allPages = document.getElementsByClassName("page"); // Получаем все странички
     for (let index = 0; index < allPages.length; ++index) {
       const element = allPages[index];
@@ -300,22 +529,18 @@ function view(page) {
     }
     var currentPage 				= document.getElementById(page);
     currentPage.style.display 		= "block";
-    carbonLoader("hide");
     fadeIn(currentPage, 1000, 'flex');
 };
 
 
 
-function loaderShow() {
-    document.getElementById('carbon_loader').style.display 	= "block";
-}
-
 function carbonLoader(x) {
   const loader = document.getElementById("carbon_loader");
-  if (!loader) return;
+  //if (!loader) return;
   if (x == "show") {
     shutDownAll();
-    setTimeout(loaderShow, 100);
+    //setTimeout(loaderShow, 100);
+    document.getElementById('carbon_loader').style.display 	= "block";
   } else if (x == "hide") {
     document.getElementById('carbon_loader').style.display 	= "none";
   };
@@ -324,11 +549,15 @@ function carbonLoader(x) {
 
 
 function warnOn() {
-  document.getElementById('inputEmail').value  				= '';
-  document.getElementById("inputEmail").placeholder 		= "укажите корректный email..."; 
-  document.getElementById("inputEmail").focus();
+  var input = document.getElementById('inputEmail');
+  input.value = '';
+  
+  // Берем перевод из словаря в зависимости от текущего языка uiLang
+  var errorPlaceholder = translationDictionary["inputEmailError"][uiLang] || translationDictionary["inputEmailError"]["en"];
+  
+  input.placeholder = errorPlaceholder; 
+  input.focus();
 }
-
 
 
 function getFooter(zx) {

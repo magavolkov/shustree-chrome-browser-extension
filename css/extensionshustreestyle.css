@@ -16,17 +16,75 @@ html, body {
 }      
 
 
-/* Noto Sans */
+/* Play Font (Cyrillic & Latin) */
 @font-face {
-  font-family: 'Noto Sans';
-  src: url('fonts/play/play-v21-cyrillic_latin-regular.woff2') format('woff2');
+  font-family: 'Play';
+  src: url('/fonts/play/play-v21-cyrillic_latin-regular.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 
 
-.button {
+
+/* Скрываем ссылку, если ширина экрана менее или равна 1000px */
+@media only screen and (max-width: 1000px) {
+    .github {
+        display: none !important;
+    }
+}
+
+
+/* Уничтожаем системный фон автозаполнения в Chromium */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus {
+    /* Твой оптимальный цвет внутренней тени */
+    -webkit-box-shadow: 0 0 0px 1000px rgba(7, 34, 77, 0.87) inset !important;
+    
+    /* Устанавливаем цвет текста твоего фирменного бирюзового оттенка */
+    -webkit-text-fill-color: rgb(147, 225, 255) !important;
+    
+    /* Принудительно возвращаем бирюзовый цвет курсора ввода */
+    caret-color: rgb(147, 225, 255) !important;
+    
+    /* Убираем системные скругления автозаполнения Chromium */
+    border-radius: 0px !important;
+
+    /* Замораживаем анимацию смены фона */
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+
+.bottom-container {
+	position:absolute;
+	right:74px;
+	font-size:1.545em;
+	text-align:right;
+	z-index:3000;
+	white-space:nowrap;
+}
+
+
+.github {
+	bottom:47px; 
+	display:inline-flex; 
+	align-items:center; 
+	gap:8px;
+}
+
+/* 1. Глобально включаем правильный расчет размеров для всего интерфейса */
+.page, .cv_item, .content, .row, .tariff-container, .inputId {
+    box-sizing: border-box !important;
+}
+
+
+
+
+.DEPRbutton {
     padding:10px 88px 10px 88px;
     text-align: center;
     text-decoration: none;
@@ -40,6 +98,52 @@ html, body {
     color: rgba(147, 225, 255);
     font-style: normal;
 }
+
+
+.button {
+    display: inline-block;
+    width: 445px; /* Фиксированная ширина под русский и английский контент */
+    box-sizing: border-box;
+    padding: 10px 0; /* Паддинги только сверху и снизу */
+    text-align: center;
+    text-decoration: none;
+    font-size: 1.25em;
+    cursor: pointer;
+    font-family: "Play", sans-serif;
+    font-weight: normal;
+    border-radius: 0px;
+    background: rgba(147, 225, 255, 0.5);
+    border: none;
+    color: rgba(147, 225, 255);
+    font-style: normal;
+}
+
+
+/* 3. Оптимизируем контейнер тарифов */
+.tariff-container {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important; /* Ровно распределяет 3 колонки */
+    align-items: center !important;
+    width: 100% !important;
+    margin: 0 0 20px 0 !important; /* Аккуратный отступ до поля ввода */
+}
+
+/* Отключаем старый хак очистки флоатов, ломающий флекс-сетку */
+.tariff-container::after {
+    display: none !important;
+    content: none !important;
+}
+
+/* 4. Принудительно фиксируем ширину колонок тарифов */
+.zeroCredit {
+    width: 110px !important; /* Увеличили до 110px, чтобы любой текст (12 мес / 12 mo) сидел идеально */
+    flex: 0 0 110px !important; /* Запрещаем сжиматься или расширяться */
+    text-align: center;
+    box-sizing: border-box;
+}
+
+
 .divLine {
   height:1px;
   border-width:0px;
@@ -76,7 +180,7 @@ html, body {
    border-width:0px;
    background-color:rgba(157,157,225,0.5);
     margin: 16px 0 16px 0;
-    width:calc(100% - 50px);
+    width:calc(100%);
 }
 .footerX {
 font-size:1.5em;
@@ -87,7 +191,7 @@ font-size:1.5em;
     border-width:0px;
     background-color:rgba(157,157,255,0.5);
     margin: 10px 0 10px 0;
-    width:calc(100% - 50px);"
+    width:calc(100%);"
 }
 .page {
     width: 495px;
@@ -119,6 +223,35 @@ font-size:1.5em;
     
     z-index: 5;
 }
+
+
+/* Контейнер для вывода ошибок валидации ID */
+.error-container {
+    font-size:1.0em;
+    margin-bottom: 5px;
+    margin-top: 15px;
+    margin-left:20px;
+    color:rgb(225,87,125);
+    position:fixed;top:314px;
+    height: 25px;               /* Фиксируем высоту, чтобы при появлении ошибки верстка снизу не прыгала */
+    width: 100%;
+    font-family: "Play", sans-serif;
+    box-sizing: border-box;
+}
+
+.error-container p {
+    margin: 0;
+    padding: 0;
+    line-height: 25px;
+}
+
+/* Контейнер для инпута, убираем лишние сдвиги */
+#restoreInputContainer {
+    width: 100%;
+    margin-bottom: 20px;       /* Равномерный отступ от поля до кнопки */
+    box-sizing: border-box;
+}
+
 
 
 .errortext {
@@ -162,30 +295,42 @@ div#networkError .errortext {
     background:rgba(15,15,77,0.0);
     height:100%;
 }
-.inputId{
+
+/* На всякий случай дублируем цвет курсора для обычного состояния фокуса */
+.inputId {
+    /* Твои текущие свойства */
     outline: none;
-    padding-left: 34px;
-    padding-top: 14px;
-    padding-bottom: 14px;
+    padding: 14px 20px !important;
     resize: none;
-    font-family: "Play", sans-serif;;
+    font-family: "Play", sans-serif;
     font-style: normal;
-    width: 374px;
+    width: 100% !important;
     border: none;
     font-size: 21px;
     color: rgb(147, 225, 255);
-    background-color: rgba(14,8,77,0.0);
+    background-color: transparent; 
+    border-radius: 4px;
     font-weight: 300;
-    display:block;
-    vertical-align:bottom;
-    margin:0px;
+    display: block;
+    margin: 10px 0 20px 0 !important;
+    box-sizing: border-box;
+
+    /* Принудительный цвет курсора по умолчанию */
+    caret-color: rgb(147, 225, 255) !important;
 }
 
 .inputId::placeholder {
     font-style: normal;
-    opacity: 1;
-    color: rgba(88,85,255);
+    color: rgba(87,85,255);
 }
+
+/* 6. Центрируем блок с кнопкой оплаты */
+.centered {
+    margin: 0 auto !important;
+    width: 100% !important;
+    text-align: center;
+}
+
 
 .link{
     cursor: pointer;
@@ -206,13 +351,7 @@ div#networkError .errortext {
 }
 
 
-.zeroCredit {
-    width: 74px;
-    height: auto;
-    margin-left:0px;
-    margin-right:0px;
-    text-align:center;
-}
+
 .link:hover{
     cursor: pointer;
     color:rgb(147, 225, 255);
@@ -292,11 +431,12 @@ div#networkError .errortext {
   overflow-wrap: break-word;
   font-size:1.7em;
 }
+/* 2. Исправляем .cv_item, чтобы он не распирал родительские блоки */
 .cv_item {
-  margin: 0px 0px 0px 0px;
-  padding: 25px 25px 25px 25px;
-  width: 100%;
-  display: inline-block;
+    margin: 0;
+    padding: 25px;
+    width: 100% !important; /* Теперь ровно 495px с учетом паддингов (чистая зона контента 445px) */
+    display: inline-block;
 }
 .cv_left {
   width: 34%;
@@ -358,7 +498,7 @@ div#networkError .errortext {
   height: 70px;
   border: 8px dotted rgba(148, 225, 255, 0.5);
   border-radius: 50%;
-  display: block;
+  display: none;
   box-sizing: border-box;
   animation: rotation 2s linear infinite;
 }

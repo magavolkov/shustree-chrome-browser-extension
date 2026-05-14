@@ -2,6 +2,10 @@
 
 // *********************** EXECUTION *****************************************************************************************************************************************************************
 
+// Запускаем локализацию сразу после загрузки DOM
+document.addEventListener('DOMContentLoaded', applyLocalization);
+
+
 
 // if cookie is not set 
 if ( carbonCookie == "") {
@@ -17,6 +21,14 @@ if ( carbonCookie == "") {
 
 // send USER DATA to carbonvpn server and get all the data needed
 async function postToCarbonAPI(toConnect) {
+  // Если запрос уже выполняется, игнорируем повторный вызов
+  if (isApiLoading) {
+    console.log("API request is already in progress. Skipping duplicate call.");
+    carbonLoader("hide");
+    return;
+  }
+  
+  isApiLoading = true; // Блокируем повторные вызовы
   carbonLoader("show");
   let postPromise 				= new Promise(function(resolve) {
     apiRequest["extension"] 		= "CARBON";
@@ -25,12 +37,15 @@ async function postToCarbonAPI(toConnect) {
     apiRequest["carbonURL"] 		= curUrl;
     apiRequest["connectStatus"] 	= connectStatus;
     apiRequest['action'] 			= userAction;
+    apiRequest['uiLang'] 			= uiLang;
     var xhr 						= new XMLHttpRequest();
     xhr.open('POST', apiUrl, true);
     xhr.setRequestHeader('Content-type', 'text/plain');  
     // --- УСТАНОВКА ТАЙМАУТА ---
-    xhr.timeout = 3762;
+    xhr.timeout = 39762;
     xhr.onload 					= function () {
+      carbonLoader("hide");
+      isApiLoading = false;
       var respJson 					= JSON.parse(this.response);
       // get and parsed main vars from server
       currentIp 					= respJson["current_ip"].trim();
@@ -60,7 +75,6 @@ async function postToCarbonAPI(toConnect) {
       chrome.storage.sync.set({ 'notifyFrequency': notifyFrequency });
       uxtx 							= respJson["carbon_config"]["authCredentials"]["ux"]; 
       chrome.storage.sync.set({ 'uxtx': uxtx });
-
       const supportUrl 				= respJson["carbon_config"]["tech_support"];
       const shustreeHeadline 		= respJson["carbon_config"]["shustree_headline"];
       document.getElementById("price1").innerHTML 		= price1.toString() + ' р';
@@ -88,6 +102,9 @@ async function postToCarbonAPI(toConnect) {
       // updating complex data
       // 1. if a balance is unpaid: 
       if ( carbonBalance === 0 ) {
+            carbonLoader("hide");
+            console.log('===========================================');
+            resolve();
             // get startDate
             chrome.storage.sync.get(['startDate'], function (data) {
               var startDate = data.startDate;
@@ -98,6 +115,7 @@ async function postToCarbonAPI(toConnect) {
               if ( ( curTime - startDate ) < free_msecs ) {
                 var tb = free_msecs - curTime + startDate;
                 chrome.storage.sync.set({ 'carbonBalanceExpiration': startDate });
+                // TODO сделать двуязычным
                 carbonHumanBalance = getTrialHumanized( tb ); //free_descr;
                 //connect
                 if (toConnect === true) {
@@ -120,12 +138,14 @@ async function postToCarbonAPI(toConnect) {
               } else {
                 //to disconnect
                 disconnect();
-                chrome.storage.sync.set({ 'carbonBalanceExpiration': startDate });
-                chrome.storage.sync.set({ 'zeroBalanceWatched': true });
+                carbonLoader("hide");
+      
                 //view default page with a footer
                 getFooter("on");
                 view("carbonMain");
                 document.getElementById("getMain").style.display 	= "none";
+                chrome.storage.sync.set({ 'carbonBalanceExpiration': startDate });
+                //chrome.storage.sync.set({ 'zeroBalanceWatched': true });
               };
               // set balance
               document.getElementById("carbonBalanceX").innerHTML 			= carbonHumanBalance;
@@ -135,6 +155,8 @@ async function postToCarbonAPI(toConnect) {
           // 2. if balance is paid: 
       } else if ( carbonBalance > 0 ) {
             //connect
+            resolve();
+            carbonLoader("hide");
             chrome.storage.sync.set({ 'carbonBalanceExpiration': carbonBalanceExpiration });
             document.getElementById("carbonBalanceX").innerHTML 			= carbonHumanBalance;
             document.getElementById("carbonBalanceY").innerHTML 			= carbonHumanBalance;
@@ -149,6 +171,7 @@ async function postToCarbonAPI(toConnect) {
             }, defaultTimeOut);
             //view default page with footer
       };
+
       getFooter("on");
       carbonLoader("hide");
       document.getElementById("inputEmail").focus();
@@ -158,7 +181,7 @@ async function postToCarbonAPI(toConnect) {
     
     // --- ОБРАБОТКА ТАЙМАУТА ---
     xhr.ontimeout = function (e) {
-      console.error("Shustree API timeout reached (3.762s). Forcing disconnect.");
+      console.error("Shustree API timeout reached (39.762s). Forcing disconnect.");
       carbonLoader("hide");
       // Принудительный вызов disconnect
       disconnect();
@@ -174,6 +197,7 @@ async function postToCarbonAPI(toConnect) {
       view("carbonError");
       resolve();
     };
+
     
     try {
             xhr.send(JSON.stringify(apiRequest));
@@ -181,6 +205,7 @@ async function postToCarbonAPI(toConnect) {
             console.error("XHR Send failed:", sendErr);
             carbonLoader("hide");
             try {
+                carbonLoader("hide");
                 disconnect();
                 view("carbonError");
             } catch (err) {
@@ -188,13 +213,14 @@ async function postToCarbonAPI(toConnect) {
             }
             // 3. Resolve the promise so 'await' doesn't hang forever
             resolve();
+            carbonLoader("hide");
     }
   });
   await postPromise;
+  carbonLoader("hide");
 };
 
-
-
+    
 // set wathced Popup at least Once trigger
 chrome.storage.sync.set({ 'atleastWatched': true });
 
@@ -254,23 +280,27 @@ postAutoConnectChoice('undefined', true)
 
 
 
-// proper Enter press on a email field
-document.getElementsByTagName('textarea')[0].addEventListener("keydown", function(event){
-  if (event.key == 'Enter') {
-    event.preventDefault();
-    postPaymentRequest(planSelected);
-  }
-});
+// Обработка нажатия Enter на поле ввода ID (теперь это input)
+const inputIdField = document.getElementById('inputCarbonId');
+if (inputIdField) {
+    inputIdField.addEventListener("keydown", function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            rechargeId(); // Твоя функция активации ID
+        }
+    });
+}
 
-
-
-// proper Enter press on an ID field
-document.getElementsByTagName('textarea')[1].addEventListener("keydown", function(event){
-  if (event.key == 'Enter') {
-    event.preventDefault();
-    rechargeId();
-  }
-});
+// Обработка нажатия Enter на поле ввода Email (теперь это input)
+const inputEmailField = document.getElementById('inputEmail');
+if (inputEmailField) {
+    inputEmailField.addEventListener("keydown", function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            getEmail(); // Твоя функция обработки Email и отправки на оплату
+        }
+    });
+}
 
 
 
@@ -364,6 +394,8 @@ document.addEventListener("visibilitychange", function() {
     postToCarbonAPI(true);
   }
 });
+
+
 
 
 chrome.storage.onChanged.addListener((changes, area) => {

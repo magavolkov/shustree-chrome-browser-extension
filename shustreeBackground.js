@@ -200,24 +200,30 @@ function runStartupLogic() {
 
 // Функция для отключения прокси (теперь она в background)
 function forceDisconnectProxy() {
-    chrome.proxy.settings.clear({ scope: 'regular' }, () => {
-        console.log('Proxy disabled automatically due to expiration');
-        // Опционально: уведомляем вкладки, если они открыты
-        chrome.storage.sync.set({ 'connectStatus': 'disconnected' });
+    // Сначала проверяем, не отключен ли он уже, чтобы избежать двойного вызова
+    chrome.storage.sync.get(['connectStatus'], (data) => {
+        if (data.connectStatus === 'disconnected') {
+            // Уже отключен, ничего делать не нужно
+            return;
+        }
+
+        chrome.proxy.settings.clear({ scope: 'regular' }, () => {
+            console.log('Proxy disabled automatically due to expiration');
+            chrome.storage.sync.set({ 'connectStatus': 'disconnected' });
+        });
     });
 }
 
-// Слушатель алармов
-chrome.alarms.onAlarm.addListener((alarm) => {
-    if (alarm.name === CHECK_BALANCE_ALARM) {
-        console.log("Alarm fired: Period expired. Disconnecting...");
-        forceDisconnectProxy();
-    }
-});
 
 // Функция для расчета времени отключения
 function scheduleExpirationCheck() {
     chrome.storage.sync.get(['carbonBalance', 'trialBalance', 'startDate', 'carbonBalanceExpiration'], (data) => {
+        // Если прокси и так выключен пользователем или системой, алармы нам не нужны
+        if (data.connectStatus === 'disconnected') {
+            chrome.alarms.clear(CHECK_BALANCE_ALARM);
+            return;
+        }
+        
         const now = Date.now();
         let expireAt = 0;
 
@@ -245,11 +251,24 @@ function scheduleExpirationCheck() {
 
 
 
-// Следим за изменениями баланса в хранилище
-// Если пользователь пополнил баланс или переподключился, обновляем аларм
+// Следим за изменениями в хранилище
 chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === 'sync' && (changes.carbonBalance || changes.carbonBalanceExpiration || changes.startDate)) {
-        scheduleExpirationCheck();
+    if (area === 'sync') {
+        // Если изменился статус подключения (например, юзер сам нажал выкл)
+        if (changes.connectStatus) {
+            if (changes.connectStatus.newValue === 'disconnected') {
+                // Если отключились — убираем аларм проверки, чтобы он не стрелял вхолостую
+                chrome.alarms.clear(CHECK_BALANCE_ALARM);
+            } else if (changes.connectStatus.newValue === 'connected') {
+                // Если подключились — планируем проверку
+                scheduleExpirationCheck();
+            }
+        }
+        
+        // Если изменились параметры времени при активном подключении — пересчитываем аларм
+        if (changes.carbonBalance || changes.carbonBalanceExpiration || changes.startDate) {
+            scheduleExpirationCheck();
+        }
     }
 });
 
