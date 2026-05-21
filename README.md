@@ -1,31 +1,46 @@
 # shustree-chrome-browser-extension
-## Shustree Chrome Browser Extension (v1.5.9) 
+## Shustree Chrome Browser Extension (v1.7.2)
 
 * **Chrome Web Store:** [Chrome Extension Shustree](https://chromewebstore.google.com/detail/shustree/fjancimbiajbfljkoggkchelcfmknkoo)
 * **Website:** [shustree.ru](https://shustree.ru)
 
+A lightweight, highly customizable Google Chrome extension designed for advanced routing of browser traffic. This production-ready release showcases advanced `chrome.proxy` API implementations, tailored for developers who need robust routing control with zero heavy third-party overhead.
 
-A lightweight, highly customizable Google Chrome extension designed for advanced routing of browser traffic. This version (1.5.9) is a production-ready release showcasing advanced chrome.proxy API implementations, tailored for developers who need robust routing control.  
+---
 
-__Features & Russian Network Specifics__  
-    • Multi-Protocol Support: Configure and route traffic seamlessly through HTTP, HTTPS, and SOCKS5 proxy protocols.  
-    • Highly Customizable API Routing: This production version showcases advanced, custom API calls for handling proxy dynamic configuration, authentication, and rules. You can easily advance or simplify the rules based on your infrastructure requirements.  
-    • Russia Network Compliance:  
-      ⚠️ Warning: SOCKS5 protocols are heavily DPI-blocked (Deep Packet Inspection) or throttled within the Russian Federation. If you are deploying nodes targeting users in Russia, it is highly recommended to use HTTP/HTTPS proxy protocols instead of SOCKS5.  
+## 🚀 Features & Russian Network Specifics  
+* **Multi-Protocol Support:** Configure and route traffic seamlessly through HTTP, HTTPS, and SOCKS5 proxy protocols.  
+* **Highly Customizable API Routing:** Advanced, custom API calls for handling proxy dynamic configuration, authentication, and routing rules. You can easily advance or simplify the rules based on your infrastructure requirements.  
+* **Bilingual Support (EN/RU):** Full native localization for both English and Russian markets. The extension dynamically adapts its UI, troubleshooting guides, and system messages based on the user's browser language environment.
+* **Russia Network Compliance:** > ⚠️ **Warning:** SOCKS5 protocols are heavily DPI-blocked (Deep Packet Inspection) or throttled within the Russian Federation. If you are deploying nodes targeting users in Russia, it is highly recommended to use HTTP/HTTPS proxy protocols instead of SOCKS5.  
 
-__Recommended Server-Side Backends__  
-To pair with this extension, you can easily deploy your own proxy servers using standard Linux packages:\
+---
+
+## ⚡ Zero-Dependency Architecture & Custom UI Framework
+
+Unlike many modern extensions weighed down by heavy external libraries, Shustree is built from the ground up for maximum responsiveness and security:
+
+* **Vanilla JS + Native APIs:** Written entirely in pure, vanilla JavaScript utilizing native Chrome extension APIs.
+* **Custom Micro-Framework:** The extension utilizes a proprietary lightweight UI framework that pre-renders the entire application instantly. There is no usage of jQuery, React, or other bloated runtime engines.
+* **Privacy-First & No Third-Party Requests:** The UI is truly blazing fast and responsive. More importantly, the extension makes **zero third-party network requests** — all communications are strictly limited to your own dedicated service API, completely protecting user data from external leakage or telemetry tracking.
+
+---
+
+## 🛠️ Recommended Server-Side Backends  
+To pair with this extension, you can easily deploy your own proxy servers using standard Linux packages:
 * **HTTP:** Use [Squid Proxy](http://www.squid-cache.org/) — the industry standard for robust, high-performance caching and HTTP proxy routing with flexible access control.
 * **SOCKS5:** Use [Dante](https://www.inet.no/dante/) — a top-tier, highly stable SOCKS server (ideal for setups deployed outside of Russian DPI-restricted zones).
 * **HTTPS (Secure):** For secure, encrypted TLS proxying, we recommend pairing Squid/Dante with a reverse-proxy TLS wrapper (like [Nginx](https://nginx.org/) or [Stunnel](https://www.stunnel.org/)) to handle the encryption handshake before passing clean traffic to your proxy daemon, or utilizing specialized secure tunneling.
 
-__Extension Configuration Examples__  
-The core of the routing relies on Chrome's chrome.proxy.settings API. Below are code templates demonstrating how to structure the internal JSON configuration parameters within background.js (or your service worker) for different proxy setups.  
+---
 
-__1. HTTP Proxy Configuration__  
+## 💻 Extension Configuration Examples  
+The core of the routing relies on Chrome's `chrome.proxy.settings` API. Below are code templates demonstrating how to structure the internal JSON configuration parameters within `background.js` (or your service worker) for different proxy setups.  
+
+### 1. HTTP Proxy Configuration  
 Routes all standard HTTP and fallback traffic through an unencrypted HTTP proxy server.  
 
-```JavaScript
+```javascript
 const httpConfig = {
   mode: "fixed_servers",
   rules: {
@@ -104,7 +119,7 @@ chrome.webRequest.onAuthRequired.addListener(
 ```
 
 
-__Installation & Developer Setup__  
+__⚙️ Installation & Developer Setup__  
     1. Clone this repository:  
        ```bash
    git clone https://github.com/magavolkov/shustree-chrome-browser-extension.git

@@ -131,11 +131,10 @@ function getBalance() {
 
 
 function getData() {
-  getTrialData();
-  getToNotifyValue();
-  getBalance();
+    getTrialData();
+    getToNotifyValue();
+    getBalance();
 }
-
 
 
 
@@ -148,7 +147,6 @@ function closeShustreeTabs() {
     });
   })
 }
-
 
 
 
@@ -202,6 +200,7 @@ function runStartupLogic() {
 function forceDisconnectProxy() {
     // Сначала проверяем, не отключен ли он уже, чтобы избежать двойного вызова
     chrome.storage.sync.get(['connectStatus'], (data) => {
+
         if (data.connectStatus === 'disconnected') {
             // Уже отключен, ничего делать не нужно
             return;
@@ -211,13 +210,18 @@ function forceDisconnectProxy() {
             console.log('Proxy disabled automatically due to expiration');
             chrome.storage.sync.set({ 'connectStatus': 'disconnected' });
         });
+
     });
+
 }
+
 
 
 // Функция для расчета времени отключения
 function scheduleExpirationCheck() {
+
     chrome.storage.sync.get(['carbonBalance', 'trialBalance', 'startDate', 'carbonBalanceExpiration'], (data) => {
+
         // Если прокси и так выключен пользователем или системой, алармы нам не нужны
         if (data.connectStatus === 'disconnected') {
             chrome.alarms.clear(CHECK_BALANCE_ALARM);
@@ -232,7 +236,7 @@ function scheduleExpirationCheck() {
             expireAt = data.carbonBalanceExpiration; 
         } else {
             // Если используем триал
-            const trialMs = data.trialBalance || 317777; // дефолт из вашего shustreeLib
+            const trialMs = data.trialBalance || 317777;
             expireAt = data.startDate + trialMs;
         }
 
@@ -246,6 +250,7 @@ function scheduleExpirationCheck() {
             chrome.alarms.create(CHECK_BALANCE_ALARM, { when: expireAt });
             console.log(`Disconnection scheduled in ${Math.round(timeLeft/1000)}s`);
         }
+
     });
 }
 

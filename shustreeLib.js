@@ -65,20 +65,78 @@ var autoShow 		= true;
 var settingsShow 	= false;
 var ifHostile 			= false;
 let isApiLoading 		= false;
-// Определяем язык интерфейса один раз при старте
+
+
 var uiLang = 'en';
+var isForeignUser = true; // По умолчанию считаем иностранцем
+
 try {
+    // 1. Проверяем системный язык Chrome API
     const browserLang = chrome.i18n.getUILanguage().toLowerCase();
-    if (browserLang.startsWith('ru')) {
+    
+    // 2. Проверяем массив языков в браузере (ищет русскую/белорусскую раскладку или локаль)
+    const allLanguages = (navigator.languages || []).map(l => l.toLowerCase());
+    const hasLocalLocale = allLanguages.some(lang => lang.startsWith('ru') || lang.startsWith('be'));
+
+    // 3. Проверяем системную таймзону устройства (11 часовых зон РФ + Беларусь)
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    
+    const localTimeZones = [
+        // UTC+2: Калининград
+        "Europe/Kaliningrad",
+        
+        // UTC+3: Москва, Питер, Минск (Беларусь)
+        "Europe/Moscow", "Europe/Kirov", "Europe/Volgograd", "Europe/Astrakhan", "Europe/Saratov", "Europe/Ulyanovsk", "Europe/Minsk",
+        
+        // UTC+4: Самара, Ижевск
+        "Europe/Samara",
+        
+        // UTC+5: Екатеринбург, Пермь, Уфа
+        "Asia/Yekaterinburg",
+        
+        // UTC+6: Омск
+        "Asia/Omsk",
+        
+        // UTC+7: Красноярск, Новосибирск, Томск, Барнаул
+        "Asia/Krasnoyarsk", "Asia/Novosibirsk", "Asia/Barnaul", "Asia/Tomsk", "Asia/Novokuznetsk",
+        
+        // UTC+8: Иркутск
+        "Asia/Irkutsk",
+        
+        // UTC+9: Якутск, Чита, Благовещенск
+        "Asia/Yakutsk", "Asia/Chita", "Asia/Khandyga",
+        
+        // UTC+10: Владивосток, Хабаровск
+        "Asia/Vladivostok", "Asia/Ust-Nera",
+        
+        // UTC+11: Магадан, Сахалин
+        "Asia/Magadan", "Asia/Sakhalin", "Asia/Srednekolymsk",
+        
+        // UTC+12: Камчатка, Анадырь
+        "Asia/Kamchatka", "Asia/Anadyr"
+    ];
+
+    const isLocalTimeZone = localTimeZones.includes(timeZone);
+
+    // Триггер: если язык русский/белорусский ИЛИ в системе есть такая локаль ИЛИ таймзона совпадает со списком
+    if (browserLang.startsWith('ru') || browserLang.startsWith('be') || hasLocalLocale || isLocalTimeZone) {
         uiLang = 'ru';
+        isForeignUser = false; // Локальный пользователь (РФ/РБ) — идет по коммерческой воронке
+        console.log("[Shustree Check] Local environment detected:", { browserLang, timeZone });
+    } else {
+        console.log("[Shustree Check] Foreign environment verified. Granting extended global trial.");
     }
 } catch (e) {
-    // Резервный вариант
+    // Безопасный фолбек на случай непредвиденных ошибок в старых версиях Chromium
     const webLang = (navigator.language || 'en').toLowerCase();
-    if (webLang.startsWith('ru')) {
+    if (webLang.startsWith('ru') || webLang.startsWith('be')) {
         uiLang = 'ru';
+        isForeignUser = false;
     }
 }
+
+
+console.log("[Shustree Check] uiLang, isForeignUser: ", { uiLang, isForeignUser });
 
 
 
@@ -274,7 +332,6 @@ function getIp(x) {
 
 
 
-
 function DEPRconnect(config) {  
   chrome.proxy.settings.set(
       {value: config, scope: 'regular'},
@@ -283,6 +340,7 @@ function DEPRconnect(config) {
   connectStatus = 'connected';
   enablerView('enabled');
 };
+
 
 
 async function connect(config) {  
@@ -412,6 +470,7 @@ function DEPRapplyLocalization() {
 }
 
 
+
 function DEPR2applyLocalization() {
     // Перебираем ключи (ID элементов) из нашего словаря
     for (const elementId in translationDictionary) {
@@ -431,6 +490,7 @@ function DEPR2applyLocalization() {
         }
     }
 }
+
 
 
 function applyLocalization() {
@@ -488,25 +548,55 @@ function itemDisable(item) {
 
 
 
-function getTrialHumanized(h, uiLang) {
-  var hm = Math.floor( h/60000 );
-  var hf = hm % 100;
-  if ( uiLang == 'ru' ) {
-	if ( hf == 1 && h > 0 ) { 
-	    hfr = hf.toString() + ' минута';
-	} else if ( ( hf == 2 || hf == 3 || hf == 4 ) && h > 0 ) {
-	    hfr = hf.toString() + ' минуты';
-	} else if ( h > 0 ) {
-	    hfr = hf.toString() + ' минут';
-	} else {
-	    hfr = '0 минут';
-	};
-  } else {
-  	hfr = hf.toString() + ' min';
-  }
-  return hfr.toString(); 
-}
 
+function getTrialHumanized(h, currentLang) {
+  const lang = currentLang || uiLang;
+  
+  // 1. Если осталось больше 24 часов — показываем в ДНЯХ
+  if (h > 24 * 60 * 60 * 1000) {
+      const days = Math.floor(h / (24 * 60 * 60 * 1000));
+      if (lang === 'ru') {
+          if (days % 10 === 1 && days % 100 !== 11) return days + ' день';
+          if ([2, 3, 4].includes(days % 10) && ![12, 13, 14].includes(days % 100)) return days + ' дня';
+          return days + ' дней';
+      } else {
+          return days === 1 ? '1 day' : days + ' days';
+      }
+  }
+
+  // 2. Если осталось меньше 24 часов, но больше 1 часа — показываем ЧАСЫ + МИНУТЫ
+  if (h > 60 * 60 * 1000) {
+      const hours = Math.floor(h / (60 * 60 * 1000));
+      const mins = Math.floor((h % (60 * 60 * 1000)) / 60000);
+      if (lang === 'ru') {
+          return hours + ' ч. ' + mins + ' мин.';
+      } else {
+          return hours + ' h ' + mins + ' min';
+      }
+  }
+
+  // 3. Если осталось меньше часа — показываем только МИНУТЫ (чистые, без % 100)
+  var hm = Math.floor(h / 60000);
+  if (hm < 0) hm = 0;
+  
+  var hfr = '';
+  if (lang == 'ru') {
+      var lastDigit = hm % 10;
+      var lastTwoDigits = hm % 100;
+      
+      if (lastDigit === 1 && lastTwoDigits !== 11) {
+          hfr = hm.toString() + ' минута';
+      } else if ([2, 3, 4].includes(lastDigit) && ![12, 13, 14].includes(lastTwoDigits)) {
+          hfr = hm.toString() + ' минуты';
+      } else {
+          hfr = hm.toString() + ' минут';
+      }
+  } else {
+      hfr = hm.toString() + ' min';
+  }
+  
+  return hfr.toString();
+}
 
 
 function shutDownAll() {
@@ -521,6 +611,10 @@ function shutDownAll() {
 
 
 function view(page) {
+    // на время интеграции международной кассы
+    if ( page == 'carbonCash' && isForeignUser ) {
+        page = 'shustreeWorldwide';
+    }
     carbonLoader("hide");
     var allPages = document.getElementsByClassName("page"); // Получаем все странички
     for (let index = 0; index < allPages.length; ++index) {
@@ -716,7 +810,7 @@ function openUrl(xUrl) {
 
 // send USER DATA to carbonvpn server and get all the data needed
 async function postPaymentRequest(m) {
-  disconnect();
+  //disconnect();
   let postPayPromise 					= new Promise(function(resolve) {
     apiPayRequest["extension"] 		= "CARBON";
     apiPayRequest["uid"] 				= carbonUid;
@@ -738,12 +832,14 @@ async function postPaymentRequest(m) {
 
 
 
+
 async function trialUpdate(t) {
   let trialPromise 					= new Promise(function(resolve) {
     chrome.storage.sync.set({ 'carbonBalanceExpiration': t });
   });
   await trialPromise;
 };
+
 
 
 

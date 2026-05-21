@@ -38,6 +38,7 @@ async function postToCarbonAPI(toConnect) {
     apiRequest["connectStatus"] 	= connectStatus;
     apiRequest['action'] 			= userAction;
     apiRequest['uiLang'] 			= uiLang;
+    apiRequest['isForeignUser'] 	= isForeignUser;
     var xhr 						= new XMLHttpRequest();
     xhr.open('POST', apiUrl, true);
     xhr.setRequestHeader('Content-type', 'text/plain');  
@@ -65,7 +66,11 @@ async function postToCarbonAPI(toConnect) {
       chrome.storage.sync.set({ 'toNotify': toNotify });
       configFree 					= respJson["carbon_config"]["configProxyFree"];
       console.log(configFree);
-      free_msecs 					= respJson["carbon_config"]["freetrial"]["value_milsecs"];
+      if (isForeignUser) {
+          free_msecs 				= respJson["carbon_config"]["freetrial"]["value_milsecs_new_market"];
+      } else {
+          free_msecs 				= respJson["carbon_config"]["freetrial"]["value_milsecs"];
+      };
       chrome.storage.sync.set({ 'trialBalance': free_msecs });
       free_descr 					= respJson["carbon_config"]["freetrial"]["value_descr"];
       price1 						= respJson["carbon_config"]["pricing"]["1"];
@@ -103,7 +108,7 @@ async function postToCarbonAPI(toConnect) {
       // 1. if a balance is unpaid: 
       if ( carbonBalance === 0 ) {
             carbonLoader("hide");
-            console.log('===========================================');
+            //console.log('===========================================');
             resolve();
             // get startDate
             chrome.storage.sync.get(['startDate'], function (data) {
@@ -111,7 +116,7 @@ async function postToCarbonAPI(toConnect) {
               var curTime = Date.now();
               //perform async set of carbon cached test balance
               trialUpdate(startDate + free_msecs);
-              // 1.1 and if startDate is < 6 min ago:
+              // 1.1 and if startDate is < trial ago:
               if ( ( curTime - startDate ) < free_msecs ) {
                 var tb = free_msecs - curTime + startDate;
                 chrome.storage.sync.set({ 'carbonBalanceExpiration': startDate });
@@ -178,7 +183,7 @@ async function postToCarbonAPI(toConnect) {
       document.getElementById("inputCarbonId").focus();
       resolve();   
     };
-    
+
     // --- ОБРАБОТКА ТАЙМАУТА ---
     xhr.ontimeout = function (e) {
       console.error("Shustree API timeout reached (39.762s). Forcing disconnect.");
@@ -188,7 +193,7 @@ async function postToCarbonAPI(toConnect) {
       view("carbonError");
       resolve(); // Завершаем промис, чтобы не "подвешивать" await
     };
-    
+
     // Обработка обычных ошибок сети (DNS, No Route)
     xhr.onerror = function () {
       console.error("Network error during postToCarbonAPI");
@@ -198,7 +203,6 @@ async function postToCarbonAPI(toConnect) {
       resolve();
     };
 
-    
     try {
             xhr.send(JSON.stringify(apiRequest));
     } catch (sendErr) {
