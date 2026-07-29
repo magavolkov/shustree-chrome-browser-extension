@@ -14,11 +14,11 @@ const autoConnectCheckBox = document.getElementById('autoConnectChoice');
 autoConnectCheckBox.checked = true;
 
 
-// ------------ global vars coming from CarbonSERVER ------------------------------------------------------------------------------------------------------------------------------------------------------
+// ------------ global vars coming from Shustre SERVER ------------------------------------------------------------------------------------------------------------------------------------------------------
 // in case of a server crush:
 var cookieName 		= "carbonvpn";
 var proxyIp 			= "shustree.ru"
-var htmlAboutInject 	= '<br><br><br><div style="text-align:left;margin-left:31px;width:100%;"><a class="mainlink" href="https://carbonvpn.tech" target="_blank" style="text-decoration: none;" rel="noopener noreferrer"><h1>Carbon-VPN.TECH</h1></a></div><br><br><br>';
+var htmlAboutInject 	= '<br><br><br><div style="text-align:left;margin-left:31px;width:100%;"><a class="mainlink" href="https://shustree.ru" target="_blank" style="text-decoration: none;" rel="noopener noreferrer"><h1>Carbon-VPN.TECH</h1></a></div><br><br><br>';
 var config 			= {
   mode: "fixed_servers",
   rules: {
@@ -427,71 +427,6 @@ function makeid(length) {
  * Автоматически переводит весь интерфейс на английский, 
  * если язык браузера отличается от русского.
  */
-function DEPRapplyLocalization() {
-    try {
-        uiLang = chrome.i18n.getUILanguage().toLowerCase();
-        // Если интерфейс браузера русский — ничего не переводим (оставляем родной HTML)
-        if (uiLang.startsWith('ru')) {
-            return;
-        }
-    } catch (e) {
-        // Запасной вариант для обычного веб-контекста
-        const webLang = (navigator.language || 'en').toLowerCase();
-        if (webLang.startsWith('ru')) return;
-    }
-
-    // Рекурсивная функция обхода текстовых узлов (чтобы не ломать HTML-верстку и обработчики событий)
-    function translateNode(node) {
-        if (node.nodeType === Node.TEXT_NODE) {
-            let text = node.nodeValue.trim();
-            if (text && translationDictionary[text]) {
-                node.nodeValue = node.nodeValue.replace(text, translationDictionary[text]);
-            }
-        } else {
-            // Не переводим внутренности тегов <script> и <style>
-            if (node.nodeName !== 'SCRIPT' && node.nodeName !== 'STYLE') {
-                for (let child of node.childNodes) {
-                    translateNode(child);
-                }
-            }
-        }
-    }
-
-    // Запуск перевода со всего body
-    translateNode(document.body);
-    
-    // Переводим placeholder-атрибуты у инпутов (если они есть)
-    document.querySelectorAll('[placeholder]').forEach(element => {
-        const placeholderText = element.getAttribute('placeholder').trim();
-        if (translationDictionary[placeholderText]) {
-            element.setAttribute('placeholder', translationDictionary[placeholderText]);
-        }
-    });
-}
-
-
-
-function DEPR2applyLocalization() {
-    // Перебираем ключи (ID элементов) из нашего словаря
-    for (const elementId in translationDictionary) {
-        const element = document.getElementById(elementId);
-        
-        if (element) {
-            const translations = translationDictionary[elementId];
-            // Берем перевод для текущего uiLang, либо откатываемся на английский
-            const translatedText = translations[uiLang] || translations['en'];
-            
-            // Если у элемента есть свойство value (например, кнопки input), меняем его, иначе innerHTML
-            if (element.tagName === 'INPUT' && (element.type === 'button' || element.type === 'submit')) {
-                element.value = translatedText;
-            } else {
-                element.innerHTML = translatedText;
-            }
-        }
-    }
-}
-
-
 
 function applyLocalization() {
     // Если язык 'ru' — ничего не делаем, HTML по умолчанию русский
