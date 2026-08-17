@@ -1,6 +1,5 @@
 # shustree-chrome-browser-extension
 
-[English](#english) | [Русский](#русский)
 
 ## English
 
