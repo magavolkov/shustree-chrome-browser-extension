@@ -24,7 +24,7 @@ var config 			= {
   rules: {
     singleProxy: {
       host: "shustree.ru", 
-      port: 762
+      port: 1762
     },
   }
 };
@@ -215,7 +215,22 @@ const translationDictionary = {
         en: "Connect ID"
     },
 
-    // ---------------- Страница Ошибки (carbonError) ----------------
+    // ---------------- Страница ТехПоддержки (carbonError) ----------------
+    "techSupportText": {
+        ru: `Перед тем, как писать в техподдержку, пожалуйста:<br><br>
+                      - убедитесь, что в Вашем браузере отключены расширения, блокирующие работу других сервисов,<br>
+                      - отключите и включите расширение,<br>
+                      - перезагрузите браузер.<br><br>
+                      Если работоспособность не восстановлена, <br>пишите на <a class="link" href="mailto:1@shustree.ru">1@shustree.ru</a>`,
+        en: `Before contacting tech support, please:<br><br>
+                  - make sure that extensions blocking other services are disabled in your browser,<br>
+                  - disable and re-enable the extension,<br>
+                  - restart your browser.<br><br>
+                  If the issue persists, <br>email us at <a class="link" href="mailto:1@shustree.ru">1@shustree.ru</a>`
+    },
+    
+    
+        // ---------------- Страница Ошибки (carbonError) ----------------
     "errorBlockText": {
         ru: `Ошибка подключения.<br>
              Убедитесь, что в Вашем браузере отключены расширения, блокирующие работу других сервисов - обычно это расширения типа "разгони Ютуб", бесплатные VPN и блокировщики рекламы.<br>

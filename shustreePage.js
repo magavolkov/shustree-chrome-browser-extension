@@ -78,14 +78,20 @@ async function postToCarbonAPI(toConnect) {
       price12 						= respJson["carbon_config"]["pricing"]["12"];
       const notifyFrequency 		= respJson["carbon_config"]["notify_frequency"];
       chrome.storage.sync.set({ 'notifyFrequency': notifyFrequency });
-      uxtx 							= respJson["carbon_config"]["authCredentials"]["ux"]; 
+      uxtx 							= respJson["carbon_config"]["authCredentials"]["ux"];
+      console.log('пароль:', uxtx);
+      // 1. Сохраняем в storage для следующих перезапусков
       chrome.storage.sync.set({ 'uxtx': uxtx });
+      // 2. Отправляем в background.js МГНОВЕННО через runtime.sendMessage
+      chrome.runtime.sendMessage({
+          action: "update_credentials",
+          uxtx: uxtx
+      });
       const supportUrl 				= respJson["carbon_config"]["tech_support"];
       const shustreeHeadline 		= respJson["carbon_config"]["shustree_headline"];
       document.getElementById("price1").innerHTML 		= price1.toString() + ' р';
       document.getElementById("price3").innerHTML 		= price3.toString() + ' р';
       document.getElementById("price12").innerHTML 		= price12.toString() + ' р';
-      document.getElementById("techSupport1").href 		= supportUrl;
       document.getElementById("shustreeHeadline").innerHTML 		= shustreeHeadline;
 
       // updating plain data
@@ -340,6 +346,10 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('about1').addEventListener("click", function() {
     document.getElementById("getMain").style.display 	= "block";
     view("carbonAbout");
+  });
+  document.getElementById('techSupport1').addEventListener("click", function() {
+    document.getElementById("getMain").style.display 	= "block";
+    view("carbonTechSupport");
   });
   document.getElementById('inputAlreadyPaid').addEventListener("click", function() {
     document.getElementById("getMain").style.display 	= "block";
