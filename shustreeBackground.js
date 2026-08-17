@@ -22,10 +22,66 @@ keepAlive();
 
 
 
+
+
+
+
+// --- 3. Инициализация при старте (считываем из кеша) ---
+chrome.storage.sync.get(['uxtx'], (result) => {
+    if (result.uxtx) {
+        const creds = result.uxtx.split(":");
+        ux = creds[0];
+        tx = creds[1];
+        console.log("Initial auth loaded:", ux);
+    }
+});
+
+
+
+// Обработка прямого сообщения с новыми данными
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.action === "update_credentials" && request.uxtx) {
+        const creds = request.uxtx.split(":");
+        ux = creds[0];
+        tx = creds[1];
+        console.log("Credentials updated via direct message:", ux, tx);
+        
+        // Сбрасываем кэш авторизации браузера (если поддерживается API)
+        if (chrome.webRequest.handlerBehaviorChanged) {
+            chrome.webRequest.handlerBehaviorChanged();
+        }
+    }
+});
+
+
+
+// Listener обновлений storage
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'sync' && changes.uxtx) {
+      var upduxtx = changes.uxtx.newValue;
+      if (upduxtx) {
+        uxtx = upduxtx;
+        const creds = uxtx.split(":");
+        ux = creds[0];
+        tx = creds[1];
+        console.log("Storage updated credentials to:", ux);
+        
+        // Очищаем внутренний кэш правил webRequest
+        if (chrome.webRequest.handlerBehaviorChanged) {
+            chrome.webRequest.handlerBehaviorChanged();
+        }
+      }
+  }
+});
+
+
+
+
+// Слушатель авторизации
 chrome.webRequest.onAuthRequired.addListener(
     (details) => { 
         if (details.isProxy) {
-            console.log("Providing auth for proxy:", details.challenger.host);
+            console.log("Providing auth for proxy:", details.challenger.host, "User:", ux);
             if (!ux || !tx) return {}; 
             return {
                 authCredentials: { 
@@ -39,22 +95,6 @@ chrome.webRequest.onAuthRequired.addListener(
     { urls: ["<all_urls>"] },
     ["blocking"] 
 );
-
-
-
-
-chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === 'sync' && changes.uxtx) {
-      const oldValue 		= changes.uxtx.oldValue;
-      var upduxtx 					= changes.uxtx.newValue;
-      if ( upduxtx !== undefined ) {
-        uxtx 					= changes.uxtx.newValue;
-        const creds 			= uxtx.split(":");
-        ux 					= creds[0];
-        tx 					= creds[1];
-    }
-  }
-});
 
 
 
@@ -85,20 +125,6 @@ chrome.runtime.onInstalled.addListener((details) => {
     }
 });
 
-
-
-
-
-
-// --- 3. Инициализация при старте (считываем из кеша) ---
-chrome.storage.sync.get(['uxtx'], (result) => {
-    if (result.uxtx) {
-        const creds = result.uxtx.split(":");
-        ux = creds[0];
-        tx = creds[1];
-        console.log("Initial auth loaded:", ux);
-    }
-});
 
 
 
