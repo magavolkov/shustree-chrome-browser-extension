@@ -10,15 +10,13 @@ const apiIp 			= "https://shustree.ru:17762/carbonvpnapi/ip_auth";
 const apiIfNotHostile = "https://shustree.ru:17762/carbonvpnapi/if_safe";
 const apiSettings 	= "https://shustree.ru:17762/carbonvpnapi/settings";
 const strTime 		= Date.now().toString();
-const autoConnectCheckBox = document.getElementById('autoConnectChoice');
-autoConnectCheckBox.checked = true;
 
 
-// ------------ global vars coming from Shustre SERVER ------------------------------------------------------------------------------------------------------------------------------------------------------
+// ------------ global vars coming from CarbonSERVER ------------------------------------------------------------------------------------------------------------------------------------------------------
 // in case of a server crush:
 var cookieName 		= "carbonvpn";
 var proxyIp 			= "shustree.ru"
-var htmlAboutInject 	= '<br><br><br><div style="text-align:left;margin-left:31px;width:100%;"><a class="mainlink" href="https://shustree.ru" target="_blank" style="text-decoration: none;" rel="noopener noreferrer"><h1>Carbon-VPN.TECH</h1></a></div><br><br><br>';
+var htmlAboutInject 	= '<br><br><br><div style="text-align:left;margin-left:31px;width:100%;"><a class="mainlink" href="https://carbonvpn.tech" target="_blank" style="text-decoration: none;" rel="noopener noreferrer"><h1>Carbon-VPN.TECH</h1></a></div><br><br><br>';
 var config 			= {
   mode: "fixed_servers",
   rules: {
@@ -62,7 +60,7 @@ var price3 			= "500";
 var price12 			= "1500";
 var toNotify 			= false;
 var autoShow 		= true;
-var settingsShow 	= false;
+//var settingsShow 	= false;
 var ifHostile 			= false;
 let isApiLoading 		= false;
 
@@ -217,24 +215,28 @@ const translationDictionary = {
 
     // ---------------- Страница ТехПоддержки (carbonError) ----------------
     "techSupportText": {
-        ru: `Перед тем, как писать в техподдержку, пожалуйста:<br><br>
+        ru: `Если возникла проблема подключения:<br><br>
                       - убедитесь, что в Вашем браузере отключены расширения, блокирующие работу других сервисов,<br>
                       - отключите и включите расширение,<br>
                       - перезагрузите браузер.<br><br>
-                      Если работоспособность не восстановлена, <br>пишите на <a class="link" href="mailto:1@shustree.ru">1@shustree.ru</a>`,
-        en: `Before contacting tech support, please:<br><br>
+                      Если работоспособность не восстановлена, <br>пожалуйста, напишите на <a class="link" href="mailto:1@shustree.ru">1@shustree.ru</a> и укажите Ваш ID.
+                      <br><br>
+                      Мы обязательно решим Вашу проблему.`,
+        en: `If you experience connection issues:<br><br>
                   - make sure that extensions blocking other services are disabled in your browser,<br>
                   - disable and re-enable the extension,<br>
                   - restart your browser.<br><br>
-                  If the issue persists, <br>email us at <a class="link" href="mailto:1@shustree.ru">1@shustree.ru</a>`
+                  If the issue persists, please email us at 1@shustree.ru and include your ID.
+                  <br><br>
+                  We will be sure to help you resolve the problem!`
     },
     
     
         // ---------------- Страница Ошибки (carbonError) ----------------
     "errorBlockText": {
         ru: `Ошибка подключения.<br>
-             Убедитесь, что в Вашем браузере отключены расширения, блокирующие работу других сервисов - обычно это расширения типа "разгони Ютуб", бесплатные VPN и блокировщики рекламы.<br>
-             Удалите или отключите их и попробуйте подключиться еще раз.<br><br>
+             Убедитесь, что в Вашем браузере отключены расширения, блокирующие работу других сервисов - обычно это расширения типа "hypertube", "uboost", "разгони Ютуб", онлайн-казино, бесплатные VPN, блокировщики рекламы и прочие вредоносные программы.<br>
+             Удалите или отключите их и попробуйте подключиться еще раз.<br>
              По всем техническим вопросам <br>пишите на <a class="link" href="mailto:1@shustree.ru">1@shustree.ru</a>`,
         en: `Connection error.<br>
              Please make sure that extensions interfering with proxy routing (such as YouTube speed boosters, free VPNs, or ad blockers) are disabled in your browser.<br>
@@ -359,38 +361,78 @@ function DEPRconnect(config) {
 
 
 async function connect(config) {  
-    // 1. Устанавливаем настройки прокси
-    chrome.proxy.settings.set(
-        {value: config, scope: 'regular'},
-        async function() { 
-            // 2. Сразу после установки проверяем, не перехватили ли нас
-            try {
-                const response = await fetch(apiIfNotHostile);
-                const data = await response.json(); // Получаем весь объект {"if_safe": true}
-    
-                // Извлекаем конкретное значение по ключу if_safe
-                const isSafe = data.if_safe;
-                //console.log(isSafe);
+    // 1. Промисифицируем установку настроек прокси, чтобы дождаться 100% применения
+    await new Promise((resolve) => {
+        chrome.proxy.settings.set({ value: config, scope: 'regular' }, resolve);
+    });
 
-                if (isSafe === true) {
-                    // Все хорошо, продолжаем
-                    getIp('c');
-                    connectStatus = 'connected';
-                    enablerView('enabled');
-                } else {
-                    // Соединение перехвачено сторонним софтом
-                    showHostileOverlay();
+    // Небольшая пауза (50ms) для гарантированной инициализации сетевого стека Chrome
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    // 2. Метод с ретраями (до 5 попыток)
+    const MAX_RETRIES = 5;
+    const TIMEOUT_MS = 4000; // Таймаут 4 сек на одну попытку
+    let isSafe = true;
+    let lastError = null;
+
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+        try {
+            // cache: 'no-store' предотвращает кеширование ответа при смене прокси
+            const response = await fetch(apiIfNotHostile, { 
+                signal: controller.signal,
+                cache: 'no-store'
+            });
+
+            clearTimeout(timeoutId);
+
+            if (response.ok) {
+                const data = await response.json();
+                if (typeof data.if_safe === 'boolean') {
+                    isSafe = data.if_safe;
+                    lastError = null;
+                    break; // Успех — выходим из цикла ретраев
                 }
-            } catch (error) {
-                console.error("Ошибка проверки безопасности:", error);
-                // В случае ошибки API решайте сами: блокировать или пропускать.
-                // Для надежности можно вызвать обычный коннект:
-                getIp('c');
-                connectStatus = 'connected';
-                enablerView('enabled');
+            } else {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+        } catch (error) {
+            clearTimeout(timeoutId);
+            lastError = error;
+            console.warn(`Попытка ${attempt}/${MAX_RETRIES} не удалась:`, error.message);
+
+            // Если это не последняя попытка — делаем паузу с увеличением интервала
+            if (attempt < MAX_RETRIES) {
+                const delay = attempt * 300; // 300ms, 600ms, 900ms, 1200ms
+                await new Promise(resolve => setTimeout(resolve, delay));
             }
         }
-    );
+    }
+
+    // 3. Обработка итогового результата
+    if (lastError !== null) {
+        console.error(`Все ${MAX_RETRIES} попыток завершились ошибкой. Последняя ошибка:`, lastError);
+        
+        // Рекомендуемое поведение при падении прокси (ERR_PROXY_CONNECTION_FAILED):
+        // Обязательно отключаем неработающий прокси, иначе у пользователя "ломается" весь интернет
+        if (typeof disconnect === 'function') {
+            await disconnect(); 
+        }
+        
+        return;
+    }
+
+    // Проверка if_safe
+    if (isSafe === true) {
+        getIp('c');
+        connectStatus = 'connected';
+        enablerView('enabled');
+    } else {
+        // Соединение перехвачено сторонним софтом
+        showHostileOverlay();
+    }
 }
 
 
@@ -442,6 +484,71 @@ function makeid(length) {
  * Автоматически переводит весь интерфейс на английский, 
  * если язык браузера отличается от русского.
  */
+function DEPRapplyLocalization() {
+    try {
+        uiLang = chrome.i18n.getUILanguage().toLowerCase();
+        // Если интерфейс браузера русский — ничего не переводим (оставляем родной HTML)
+        if (uiLang.startsWith('ru')) {
+            return;
+        }
+    } catch (e) {
+        // Запасной вариант для обычного веб-контекста
+        const webLang = (navigator.language || 'en').toLowerCase();
+        if (webLang.startsWith('ru')) return;
+    }
+
+    // Рекурсивная функция обхода текстовых узлов (чтобы не ломать HTML-верстку и обработчики событий)
+    function translateNode(node) {
+        if (node.nodeType === Node.TEXT_NODE) {
+            let text = node.nodeValue.trim();
+            if (text && translationDictionary[text]) {
+                node.nodeValue = node.nodeValue.replace(text, translationDictionary[text]);
+            }
+        } else {
+            // Не переводим внутренности тегов <script> и <style>
+            if (node.nodeName !== 'SCRIPT' && node.nodeName !== 'STYLE') {
+                for (let child of node.childNodes) {
+                    translateNode(child);
+                }
+            }
+        }
+    }
+
+    // Запуск перевода со всего body
+    translateNode(document.body);
+    
+    // Переводим placeholder-атрибуты у инпутов (если они есть)
+    document.querySelectorAll('[placeholder]').forEach(element => {
+        const placeholderText = element.getAttribute('placeholder').trim();
+        if (translationDictionary[placeholderText]) {
+            element.setAttribute('placeholder', translationDictionary[placeholderText]);
+        }
+    });
+}
+
+
+
+function DEPR2applyLocalization() {
+    // Перебираем ключи (ID элементов) из нашего словаря
+    for (const elementId in translationDictionary) {
+        const element = document.getElementById(elementId);
+        
+        if (element) {
+            const translations = translationDictionary[elementId];
+            // Берем перевод для текущего uiLang, либо откатываемся на английский
+            const translatedText = translations[uiLang] || translations['en'];
+            
+            // Если у элемента есть свойство value (например, кнопки input), меняем его, иначе innerHTML
+            if (element.tagName === 'INPUT' && (element.type === 'button' || element.type === 'submit')) {
+                element.value = translatedText;
+            } else {
+                element.innerHTML = translatedText;
+            }
+        }
+    }
+}
+
+
 
 function applyLocalization() {
     // Если язык 'ru' — ничего не делаем, HTML по умолчанию русский
@@ -624,37 +731,59 @@ function rechargeId() {
 
 
 async function enablerView(xy) {
-  let enablerPromise 					= new Promise(function(resolve) {
-    if (xy == 'enabled') {
+  let enablerPromise = new Promise(function(resolve) {
+    const logoContainer = document.getElementById("logo");
+    const enablerContainer = document.getElementById("enabler");
+    const basementContainer = document.getElementById("basement");
+    
+    // Получаем элементы страницы для смены состояния
+    const pageElements = document.querySelectorAll('.page');
+
+    if (xy === 'enabled') {
       // style logo
       logo.src = chrome.runtime.getURL("img/Shustree.png");
       logo.style.opacity = 1;
-      document.getElementById("logo").appendChild(logo);
+      
       // style enabler
       enabler.src = chrome.runtime.getURL("img/enabler_on.png");
-      document.getElementById("enabler").appendChild(enabler);
+      
       // style basement
       basement.src = chrome.runtime.getURL("img/basement_enhanced.png");
       document.getElementById('titleShustree').style.opacity = 1;
-      document.getElementById("basement").appendChild(basement);
-      document.getElementById('basement').style.opacity 	= 1;
+      document.getElementById('basement').style.opacity = 1;
+
+      // Переключаем в состояние 'enabled' (убираем класс .disabled)
+      //pageElements.forEach(page => page.classList.remove('disabled'));
+      pageElements.forEach(page => page.classList.add('enabled'));
+
     } else {
       // style logo
       logo.src = chrome.runtime.getURL("img/Shustree_vertical.png");
       logo.style.opacity = 0.545;
-      document.getElementById("logo").appendChild(logo);
+      
       // style enabler
       enabler.src = chrome.runtime.getURL("img/enabler_off.png");
-      document.getElementById("enabler").appendChild(enabler);
+      
       // style basement
       basement.src = chrome.runtime.getURL("img/basement_narrowed.png");
       document.getElementById('titleShustree').style.opacity = 0.545;
-      document.getElementById("basement").appendChild(basement);
-      document.getElementById('basement').style.opacity 	= 0.887;
+      document.getElementById('basement').style.opacity = 0.887;
+
+      // Переключаем в состояние 'disabled' (убираем класс .enabled)
+      //pageElements.forEach(page => page.classList.add('disabled'));
+      pageElements.forEach(page => page.classList.remove('enabled'));
+
     }
+
+    // Вставляем элементы только если контейнер еще пуст
+    if (logoContainer && !logoContainer.contains(logo)) logoContainer.appendChild(logo);
+    if (enablerContainer && !enablerContainer.contains(enabler)) enablerContainer.appendChild(enabler);
+    if (basementContainer && !basementContainer.contains(basement)) basementContainer.appendChild(basement);
+
+    resolve();
   });
   await enablerPromise;
-};
+}
 
 
 
@@ -695,7 +824,7 @@ function showHostileOverlay() {
             <div class="hostile-content">
                 <h2>Внимание!</h2>
                 <p>Ваше интернет-соединение контролирует стороннее расширение.</p>
-                <p class="sub-text">Обычно это расширения типа "разгони Ютуб", бесплатные VPN или блокировщики рекламы.</p>
+                <p class="sub-text">Обычно это расширения "hypertube", "uboost", другие клоны "разгони Ютуб", онлайн-казино, бесплатные VPN, блокировщики рекламы и прочие вредоносные программы.</p>
                 <p>Для нормальной работы Shustree отключите или удалите их и попробуйте снова.</p>
                 <button class="okCarbon" id="closeOverlayBtn">ОК</button>
             </div>
@@ -823,33 +952,32 @@ async function postRestoredId(restoredId) {
 
 
 
+// Обработчик вызова страницы пополнения
+function openTopUpFlow() {
+    chrome.storage.sync.get(['paymentInfoWatched'], (result) => {
+        if (result.paymentInfoWatched) {
+            // Если уже смотрел — переводим сразу на экран с тарифами
+            view("carbonCash");
+        } else {
+            // Первый раз — показываем инфо-экран
+            view("carbonPaymentIntro");
+        }
+    });
+}
 
-// send USER choice on auto swith on
-async function postAutoConnectChoice(autoChoice, start) {
-  let postAutoChoicePromise 			= new Promise(function(resolve) {
-    apiChoiceRequest["extension"] 		= "CARBON";
-    apiChoiceRequest["choice"] 			= autoChoice;
-    apiChoiceRequest["carbonCookie"] 	= carbonCookie;
-    var xhr 							= new XMLHttpRequest();
-    xhr.open('POST', apiSettings, true);
-    xhr.setRequestHeader('Content-type', 'text/plain');  
-    xhr.onload 						= function () {
-      var respJsonA 					= JSON.parse(this.response);
-      var responseA 					= respJsonA["auto_status"];
-      autoShow 						= responseA;
-      if (responseA == true) {
-        autoConnectCheckBox.checked = true;
-      } else {
-        autoConnectCheckBox.checked = false;
-      };
-      if ( start === true ) {
-        postToCarbonAPI(responseA);
-      }
-    };
-    xhr.send(JSON.stringify(apiChoiceRequest));
-  });
-  await postAutoChoicePromise;
-};
+
+
+// Пи получении новых кредов:
+function onCredentialsReceived(newUxtx) {
+    // 1. МГНОВЕННО обновляем RAM в Background Service Worker
+    chrome.runtime.sendMessage({ 
+        action: "update_credentials_immediate", 
+        uxtx: newUxtx 
+    });
+
+    // 2. Асинхронно сохраняем в Storage для смены сессий/перезапуска
+    chrome.storage.sync.set({ uxtx: newUxtx });
+}
 
 
 

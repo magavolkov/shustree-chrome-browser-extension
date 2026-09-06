@@ -19,6 +19,7 @@ if ( carbonCookie == "") {
 
 
 
+
 // send USER DATA to carbonvpn server and get all the data needed
 async function postToCarbonAPI(toConnect) {
   // Если запрос уже выполняется, игнорируем повторный вызов
@@ -43,7 +44,7 @@ async function postToCarbonAPI(toConnect) {
     xhr.open('POST', apiUrl, true);
     xhr.setRequestHeader('Content-type', 'text/plain');  
     // --- УСТАНОВКА ТАЙМАУТА ---
-    xhr.timeout = 39762;
+    xhr.timeout = 7762;
     xhr.onload 					= function () {
       carbonLoader("hide");
       isApiLoading = false;
@@ -58,14 +59,11 @@ async function postToCarbonAPI(toConnect) {
       carbonBalanceExpiration 		= respJson["expiration_time"];
       cookieName 					= respJson["carbon_config"]["cookieName"];
       proxyIp 						= respJson["carbon_config"]["proxyIp"];
-      carbonPixelUrl 				= respJson["carbon_config"]["carbonPixelUrl"];
       htmlAboutInject 				= respJson["carbon_config"]["htmlAboutInject"];
       config 						= respJson["carbon_config"]["configProxy"];
       //console.log(config);
-      toNotify 						= respJson["carbon_config"]["to_notify"];
-      chrome.storage.sync.set({ 'toNotify': toNotify });
       configFree 					= respJson["carbon_config"]["configProxyFree"];
-      console.log(configFree);
+      //console.log(configFree);
       if (isForeignUser) {
           free_msecs 				= respJson["carbon_config"]["freetrial"]["value_milsecs_new_market"];
       } else {
@@ -76,17 +74,10 @@ async function postToCarbonAPI(toConnect) {
       price1 						= respJson["carbon_config"]["pricing"]["1"];
       price3 						= respJson["carbon_config"]["pricing"]["3"];
       price12 						= respJson["carbon_config"]["pricing"]["12"];
-      const notifyFrequency 		= respJson["carbon_config"]["notify_frequency"];
-      chrome.storage.sync.set({ 'notifyFrequency': notifyFrequency });
       uxtx 							= respJson["carbon_config"]["authCredentials"]["ux"];
-      console.log('пароль:', uxtx);
       // 1. Сохраняем в storage для следующих перезапусков
-      chrome.storage.sync.set({ 'uxtx': uxtx });
-      // 2. Отправляем в background.js МГНОВЕННО через runtime.sendMessage
-      chrome.runtime.sendMessage({
-          action: "update_credentials",
-          uxtx: uxtx
-      });
+      onCredentialsReceived(uxtx)      
+      
       const supportUrl 				= respJson["carbon_config"]["tech_support"];
       const shustreeHeadline 		= respJson["carbon_config"]["shustree_headline"];
       document.getElementById("price1").innerHTML 		= price1.toString() + ' р';
@@ -98,17 +89,13 @@ async function postToCarbonAPI(toConnect) {
       document.getElementById("whatCarbonIsAbout").innerHTML 		= htmlAboutInject;
 
       document.getElementById("carbonUid").innerHTML = carbonUid.trim();
+      document.getElementById("carbonUidX").innerHTML = carbonUid.trim();
+      
       if (currentIp == proxyIp) {
         connectStatus 				= "connected";
       } else {
         connectStatus 				= "disconnected";
       };
-
-      // show settings sections if not
-      if ( settingsShow === false) {
-          settingsShow 				= true;
-          document.getElementById("settingsBox").style.display 	= "block";
-      }
 
       // updating complex data
       // 1. if a balance is unpaid: 
@@ -193,6 +180,7 @@ async function postToCarbonAPI(toConnect) {
     // --- ОБРАБОТКА ТАЙМАУТА ---
     xhr.ontimeout = function (e) {
       console.error("Shustree API timeout reached (39.762s). Forcing disconnect.");
+      isApiLoading = false;
       carbonLoader("hide");
       // Принудительный вызов disconnect
       disconnect();
@@ -203,6 +191,7 @@ async function postToCarbonAPI(toConnect) {
     // Обработка обычных ошибок сети (DNS, No Route)
     xhr.onerror = function () {
       console.error("Network error during postToCarbonAPI");
+      isApiLoading = false;
       carbonLoader("hide");
       disconnect();
       view("carbonError");
@@ -228,6 +217,7 @@ async function postToCarbonAPI(toConnect) {
   });
   await postPromise;
   carbonLoader("hide");
+  isApiLoading = false;
 };
 
     
@@ -236,11 +226,24 @@ chrome.storage.sync.set({ 'atleastWatched': true });
 
 
 
-//set logo & name
+// set logo & name
+const logoLink = document.createElement("a");
+logoLink.href = "https://shustree.ru";
+logoLink.target = "_blank";
+logoLink.rel = "noopener noreferrer";
+
+// Ограничиваем ширину контейнера-ссылки по ширине контента
+logoLink.style.display = 'inline-block';
+logoLink.style.width = 'fit-content'; 
+
 logo.src = chrome.runtime.getURL("img/Shustree_vertical.png");
 logo.style.width = '70px';
 logo.style.opacity = 0.545;
-document.getElementById("logo").appendChild(logo);
+logo.style.display = 'block'; 
+
+logoLink.appendChild(logo);
+document.getElementById("logo").appendChild(logoLink);
+
 document.getElementById('basement').style.opacity = 0.545;
 document.getElementById('titleShustree').style.opacity = 0.545;
 
@@ -286,7 +289,7 @@ getPrice(3);
 
 
 //START EXTENSION FUNCTIONALITY
-postAutoConnectChoice('undefined', true)
+postToCarbonAPI(true)
 
 
 
@@ -315,12 +318,14 @@ if (inputEmailField) {
 
 
 function enableFunction() {
-  if ( connectStatus == 'connected' ) {
-    disconnect();
-  } else {
-    postToCarbonAPI(true);
-  }
-};
+    if (isApiLoading === false) {
+        if ( connectStatus == 'connected'  ) {
+	    disconnect();
+        } else {
+	    postToCarbonAPI(true);
+	}
+    }
+}
 
 
 
@@ -333,13 +338,15 @@ document.addEventListener('DOMContentLoaded', function () {
   });
   document.getElementById('charge1').addEventListener("click", function() {
     document.getElementById("getMain").style.display 	= "block";
-    view("carbonCash");
+    //view("carbonCash");
+    openTopUpFlow();
     getFooter("on");
     getPrice(3);
   });
   document.getElementById('charge2').addEventListener("click", function() {
     document.getElementById("getMain").style.display 	= "block";
-    view("carbonCash");
+    //view("carbonCash");
+    openTopUpFlow()
     getFooter("on");
     getPrice(3);
   });
@@ -384,36 +391,37 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById("refChatGPT").addEventListener("click", function() {
     openUrl("https://chatgpt.com");
   });
+  document.getElementById("refWhatsApp").addEventListener("click", function() {
+    openUrl("https://web.whatsapp.com");
+  });
   document.getElementById("refByDefault").addEventListener("click", function() {
     openUrl("https://youtube.com");
   });
-  autoConnectCheckBox.addEventListener('change', function() {
-        if (autoConnectCheckBox.checked) {
-            autoShow = true;
-            postAutoConnectChoice(true, false);
-            postToCarbonAPI(true);
-        } else {
-            postAutoConnectChoice(false, false);
-            autoShow = false;
-        }
-    });
 });
 
 
 
-//reconnect if a tab is reactivated 
-document.addEventListener("visibilitychange", function() {
-  if (document.visibilityState === "visible" && autoShow === true) {
-    // code when page is visible
-    postToCarbonAPI(true);
-  }
-});
 
+
+
+// Навешиваем событие на кнопку "Продолжить"
+document.addEventListener("DOMContentLoaded", () => {
+    const btnContinue = document.getElementById("btnContinuePayment");
+    if (btnContinue) {
+        btnContinue.addEventListener("click", () => {
+            // Точечно обновляем состояние без лишних фоновых алармов
+            chrome.storage.sync.set({ 'paymentInfoWatched': true }, () => {
+                // После сохранения открываем саму страницу оплаты
+                view("carbonCash");
+            });
+        });
+    }
+});
 
 
 
 chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === 'sync' && changes.connectStatus) {
+    if (area === 'sync' && changes.connectStatus && isApiLoading === false) {
         if (changes.connectStatus.newValue === 'disconnected') {
             // Обновляем UI вкладки, если она открыта
             enablerView('disabled');

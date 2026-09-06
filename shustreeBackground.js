@@ -1,160 +1,172 @@
-var notificationIdlePeriod 	= 187 * 1000; //187 seconds
-var trialBalance 			= 0; //0 minutes by default 
-var carbonBalance 		= 0; // 0 minutes by default
-var notificationIdleTime 	= 0;
-var expTime 			= Date.now();
-var netBalanceFloat 		= 5;
-var toNotify 				= false;
-let ux 					= '';
-let tx 					= '';
-let uxtx 					= '';
-var carbonCookie 		= 'default';
-// Константа имени аларма
+var notificationIdlePeriod = 187 * 1000;
+var trialBalance = 0;
+var carbonBalance = 0;
+var notificationIdleTime = 0;
+var expTime = Date.now();
+var netBalanceFloat = 5;
+var toNotify = false;
+
+
+
+// RAM Credentials State
+let ux = '';
+let tx = '';
+let uxtx = '';
+let isCredsReady = false; // Флаг готовности кредов в RAM
+
+var carbonCookie = 'default';
+let isResettingSockets = false;
+
 const CHECK_BALANCE_ALARM = "check_carbon_balance_alarm";
 
+// --- KeepAlive ---
+let keepAliveInterval = null;
+function setupKeepAlive() {
+    if (!keepAliveInterval) {
+        keepAliveInterval = setInterval(() => {
+            chrome.runtime.getPlatformInfo(() => {});
+        }, 20e3);
+    }
+}
+chrome.runtime.onStartup.addListener(setupKeepAlive);
+setupKeepAlive();
 
+// --- СИНХРОНИЗАЦИЯ КРЕДОВ И УПРАВЛЕНИЕ RAM ---
 
+function applyCredentialsNow(rawUxtx) {
+    if (rawUxtx && typeof rawUxtx === 'string' && rawUxtx.includes(':')) {
+        uxtx = rawUxtx;
+        const parts = uxtx.split(':');
+        ux = parts[0] || '';
+        tx = parts[1] || '';
+        isCredsReady = true;
+        console.log("[Shustree RAM Sync] Credentials ready in RAM:", ux);
+    }
+}
 
-const keepAlive = () => setInterval(chrome.runtime.getPlatformInfo, 20e3);
-chrome.runtime.onStartup.addListener(keepAlive);
-keepAlive();
-
-
-
-
-
-
-
-
-// --- 3. Инициализация при старте (считываем из кеша) ---
+// Первоочередное СИНХРОННОЕ/БЫСТРОЕ чтение кредов при старте Service Worker
 chrome.storage.sync.get(['uxtx'], (result) => {
     if (result.uxtx) {
-        const creds = result.uxtx.split(":");
-        ux = creds[0];
-        tx = creds[1];
-        console.log("Initial auth loaded:", ux);
+        applyCredentialsNow(result.uxtx);
     }
 });
 
 
-
-// Обработка прямого сообщения с новыми данными
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === "update_credentials" && request.uxtx) {
-        const creds = request.uxtx.split(":");
-        ux = creds[0];
-        tx = creds[1];
-        console.log("Credentials updated via direct message:", ux, tx);
-        
-        // Сбрасываем кэш авторизации браузера (если поддерживается API)
-        if (chrome.webRequest.handlerBehaviorChanged) {
-            chrome.webRequest.handlerBehaviorChanged();
-        }
+// Слушатели мгновенных обновлений
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === "update_credentials_immediate" && message.uxtx) {
+        applyCredentialsNow(message.uxtx);
+        sendResponse({ status: "ok" });
     }
+    return true;
 });
 
-
-
-// Listener обновлений storage
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === 'sync' && changes.uxtx) {
-      var upduxtx = changes.uxtx.newValue;
-      if (upduxtx) {
-        uxtx = upduxtx;
-        const creds = uxtx.split(":");
-        ux = creds[0];
-        tx = creds[1];
-        console.log("Storage updated credentials to:", ux);
-        
-        // Очищаем внутренний кэш правил webRequest
-        if (chrome.webRequest.handlerBehaviorChanged) {
-            chrome.webRequest.handlerBehaviorChanged();
-        }
-      }
-  }
+    if (area === 'sync' && changes.uxtx && changes.uxtx.newValue) {
+        applyCredentialsNow(changes.uxtx.newValue);
+    }
 });
 
+// --- БЛОКИРОВКА СОКЕТОВ И СБРОС ПУЛА ---
 
+function flushProxySockets() {
+    if (isResettingSockets) return;
+    isResettingSockets = true;
 
-
-// Слушатель авторизации
-chrome.webRequest.onAuthRequired.addListener(
-    (details) => { 
-        if (details.isProxy) {
-            console.log("Providing auth for proxy:", details.challenger.host, "User:", ux);
-            if (!ux || !tx) return {}; 
-            return {
-                authCredentials: { 
-                    username: ux, 
-                    password: tx 
-                }
-            };
+    // В .get() передается { incognito: false }, а НЕ scope!
+    chrome.proxy.settings.get({ incognito: false }, (config) => {
+        if (!config || !config.value) {
+            isResettingSockets = false;
+            return;
         }
-        return {}; 
+
+        // А вот в .set() уже используется scope: 'regular'
+        chrome.proxy.settings.set({ value: config.value, scope: 'regular' }, () => {
+            isResettingSockets = false;
+        });
+    });
+}
+
+
+
+// Отслеживаем 407 статус от прокси и ошибки подключения
+chrome.webRequest.onHeadersReceived.addListener(
+    (details) => {
+        if (details.statusCode === 407) {
+            console.warn("[Shustree] Detected 407 Proxy Auth Required. Flushing sockets...");
+            flushProxySockets();
+        }
     },
-    { urls: ["<all_urls>"] },
-    ["blocking"] 
+    { urls: ["<all_urls>"] }
 );
 
 
+chrome.webRequest.onErrorOccurred.addListener(
+    (details) => {
+        if (details.error === "net::ERR_PROXY_AUTH_REQUESTED" || details.error === "net::ERR_TUNNEL_CONNECTION_FAILED") {
+            console.warn("[Shustree] Proxy connection broken. Flushing sockets...");
+            flushProxySockets();
+        }
+    },
+    { urls: ["<all_urls>"] }
+);
 
 
+// --- СИНХРОННЫЙ ОБРАБОТЧИК АВТОРИЗАЦИИ (ЗАЩИТА ОТ СИСТЕМНОГО ОКНА) ---
+
+chrome.webRequest.onAuthRequired.addListener(
+    (details) => {
+        if (details.isProxy) {
+            // Если креды еще не вычитаны в RAM (загрузка SW) или отсутствуют — МГНОВЕННО режем сокет
+            if (!isCredsReady || !ux || !tx) {
+                console.warn("[Shustree] Credentials NOT in RAM yet. Blocking request to prevent native popup.");
+                // Отсылаем сброс сокетов, чтобы при следующем автозапросе креды уже были в RAM
+                flushProxySockets();
+                return { cancel: true };
+            }
+
+            // Мгновенная отдача авторизации из оперативной памяти
+            return {
+                authCredentials: { username: ux, password: tx }
+            };
+        }
+        return {};
+    },
+    { urls: ["<all_urls>"] },
+    ["blocking"]
+);
+
+// --- ФОНОВЫЕ ТАЙМЕРЫ И СЕРВИСЫ ---
 
 chrome.runtime.onInstalled.addListener((details) => {
-    // Проверяем, что это именно установка (или обновление)
     if (details.reason === "install") {
-        console.log("Shustree: Первая установка. Инициализация хранилища...");
-        
-        // Объединяем все записи в одну операцию
         chrome.storage.sync.set({
             'atleastWatched': false,
             'zeroBalanceWatched': false,
+            'paymentInfoWatched': false,
             'carbonBalanceExpiration': 0,
             'startDate': Date.now()
-        }, () => {
-            if (chrome.runtime.lastError) {
-                console.error("Ошибка инициализации:", chrome.runtime.lastError);
-            } else {
-                console.log("Данные успешно инициализированы.");
-            }
         });
-
-    } else if (details.reason === "update") {
-        console.log("Shustree: Расширение обновлено до версии " + chrome.runtime.getManifest().version);
-        // Здесь можно добавить миграцию данных, если формат изменился
     }
 });
 
-
-
-
-
-
-// FUNCTIONS
-
 function getTrialData() {
-    chrome.storage.sync.get(['trialBalance'], function ( trialData ) {
-        trialBalance 			= trialData.trialBalance;
+    chrome.storage.sync.get(['trialBalance'], (trialData) => {
+        trialBalance = trialData.trialBalance || 0;
     });
 }
-
-
 
 function getToNotifyValue() {
-    chrome.storage.sync.get(['toNotify'], function ( notifyData ) {
-        toNotify 			= notifyData.toNotify;
+    chrome.storage.sync.get(['toNotify'], (notifyData) => {
+        toNotify = notifyData.toNotify || false;
     });
 }
-
-
 
 function getBalance() {
-    chrome.storage.sync.get(['carbonBalance'], function ( balanceData ) {
-        carbonBalance 		= balanceData.carbonBalance;
+    chrome.storage.sync.get(['carbonBalance'], (balanceData) => {
+        carbonBalance = balanceData.carbonBalance || 0;
     });
 }
-
-
 
 function getData() {
     getTrialData();
@@ -163,92 +175,38 @@ function getData() {
 }
 
 
-
-function closeShustreeTabs() {
-  chrome.tabs.query( { "url":[ 
-      "chrome-extension://fjancimbiajbfljkoggkchelcfmknkoo/shustree_balance.html" 
-  ] }, function( tabs ){ 
-    tabs.forEach(function(tab) {
-        chrome.tabs.remove(tab.id);
-    });
-  })
-}
-
-
-
-// 1. Функция, которая гарантированно открывает вкладку
 function forceOpenDashboard() {
-    
-    closeShustreeTabs();
-    //console.log("Attempting to open dashboard...");
-
-    // Get the full internal URL of your extension page
     const targetUrl = chrome.runtime.getURL("shustree_balance.html");
-
-    // 1. Find all tabs matching your extension's specific URL
-    chrome.tabs.query({ url: targetUrl }, function(tabs) {
-
-
-        // 3. Small timeout to ensure the browser has registered the closure
-        setTimeout(() => {
-            chrome.tabs.create({ 
-                url: "shustree_balance.html",
-                active: true 
-            }, (tab) => {
-                if (chrome.runtime.lastError) {
-                    console.error("Tab creation failed:", chrome.runtime.lastError);
-                } else {
-                    console.log("Dashboard opened successfully, tab ID:", tab.id);
-                }
-            });
-        }, 200);
+    
+    chrome.tabs.query({ url: targetUrl }, (tabs) => {
+        if (tabs.length > 0) {
+            chrome.tabs.update(tabs[0].id, { active: true });
+            for (let i = 1; i < tabs.length; i++) {
+                chrome.tabs.remove(tabs[i].id);
+            }
+        } else {
+            chrome.tabs.create({ url: "shustree_balance.html", active: true });
+        }
     });
 }
 
-
-
-
-
-
-// 2. "умный" запуск
 function runStartupLogic() {
-    // Проверяем баланс и данные
     getData(); 
-    closeShustreeTabs();
-    // Вызываем открытие
     forceOpenDashboard();
 }
 
-
-
-
-// Функция для отключения прокси (теперь она в background)
 function forceDisconnectProxy() {
-    // Сначала проверяем, не отключен ли он уже, чтобы избежать двойного вызова
     chrome.storage.sync.get(['connectStatus'], (data) => {
-
-        if (data.connectStatus === 'disconnected') {
-            // Уже отключен, ничего делать не нужно
-            return;
-        }
+        if (data.connectStatus === 'disconnected') return;
 
         chrome.proxy.settings.clear({ scope: 'regular' }, () => {
-            console.log('Proxy disabled automatically due to expiration');
             chrome.storage.sync.set({ 'connectStatus': 'disconnected' });
         });
-
     });
-
 }
 
-
-
-// Функция для расчета времени отключения
 function scheduleExpirationCheck() {
-
-    chrome.storage.sync.get(['carbonBalance', 'trialBalance', 'startDate', 'carbonBalanceExpiration'], (data) => {
-
-        // Если прокси и так выключен пользователем или системой, алармы нам не нужны
+    chrome.storage.sync.get(['carbonBalance', 'trialBalance', 'startDate', 'carbonBalanceExpiration', 'connectStatus'], (data) => {
         if (data.connectStatus === 'disconnected') {
             chrome.alarms.clear(CHECK_BALANCE_ALARM);
             return;
@@ -258,67 +216,47 @@ function scheduleExpirationCheck() {
         let expireAt = 0;
 
         if (data.carbonBalance > 0) {
-            // Если есть платный баланс
             expireAt = data.carbonBalanceExpiration; 
         } else {
-            // Если используем триал
             const trialMs = data.trialBalance || 317777;
-            expireAt = data.startDate + trialMs;
+            expireAt = (data.startDate || now) + trialMs;
         }
 
         const timeLeft = expireAt - now;
 
         if (timeLeft <= 0) {
-            // Время уже вышло
             forceDisconnectProxy();
         } else {
-            // Создаем аларм на точное время (алармы принимают время в миллисекундах для "when")
             chrome.alarms.create(CHECK_BALANCE_ALARM, { when: expireAt });
-            console.log(`Disconnection scheduled in ${Math.round(timeLeft/1000)}s`);
         }
-
     });
 }
 
+chrome.alarms.onAlarm.addListener((alarm) => {
+    if (alarm.name === CHECK_BALANCE_ALARM) {
+        forceDisconnectProxy();
+    }
+});
 
-
-// Следим за изменениями в хранилище
 chrome.storage.onChanged.addListener((changes, area) => {
     if (area === 'sync') {
-        // Если изменился статус подключения (например, юзер сам нажал выкл)
         if (changes.connectStatus) {
             if (changes.connectStatus.newValue === 'disconnected') {
-                // Если отключились — убираем аларм проверки, чтобы он не стрелял вхолостую
                 chrome.alarms.clear(CHECK_BALANCE_ALARM);
             } else if (changes.connectStatus.newValue === 'connected') {
-                // Если подключились — планируем проверку
                 scheduleExpirationCheck();
             }
         }
-        
-        // Если изменились параметры времени при активном подключении — пересчитываем аларм
         if (changes.carbonBalance || changes.carbonBalanceExpiration || changes.startDate) {
             scheduleExpirationCheck();
         }
     }
 });
 
-// Запускаем проверку при старте
 chrome.runtime.onStartup.addListener(scheduleExpirationCheck);
-// И при установке/обновлении
 chrome.runtime.onInstalled.addListener(scheduleExpirationCheck);
 
-
-
-
-
-
-// 3. САМОЕ ВАЖНОЕ: Точка входа
 runStartupLogic();
-
-
-//  4. updating basic data 
-setTimeout( getData, 3347 );
-
+setTimeout(getData, 3347);
 
 

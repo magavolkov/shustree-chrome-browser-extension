@@ -29,8 +29,8 @@
 
 
 
-<center>
-        <div id="title" style="margin-top: 54px;position:absolute;left: calc(50% + 41px);">
+      <center>
+        <div id="title" style="margin-top: 57px;position:absolute;left: calc(50% + 41px);">
           <h2 id="titleShustree"><a href="https://shustree.ru" target="_blank" class="heading" style="font-family: 'GOST type B';font-size:1.7em;padding-bottom:0px;padding-top:0px;text-decoration: none;font-weight:400;font-style:italic;line-height:1.4em;color:rgb(87,235,255)">shustree</a></h2>
         </div>
         <div id="logo" style="padding-top: 54px;">
@@ -42,13 +42,8 @@
         </div>
       </center>
 
-<div id="settingsBox">
-      <span class="settings" id="autoTip">Подключаться автоматически</span>
-      <label class="switch">
-          <input type="checkbox" id="autoConnectChoice">
-          <span class="slider"></span>
-      </label>
-</div>
+
+
 
 <div class="backup" id="getMain">
           <a class="linkBack"><strong>&lt;&lt;</strong></a>
@@ -78,8 +73,9 @@
             <span id="carbonWideOpen" style="color:rgb(175,175,225)">
               <a id="refYouTube" class="link">YouTube</a>,
               <a id="refGemini" class="link">Gemini</a>, 
-              <a id="refChatGPT" class="link">ChatGPT</a>
-              <br><span id="andOtherSites">и другие сайты,</span> 
+              <a id="refChatGPT" class="link">ChatGPT</a>,
+              <a id="refWhatsApp" class="link">WhatsApp</a>
+              <span id="andOtherSites">и другие сайты,</span> 
               <br><span id="notBannedInRU">не запрещенные в РФ</span>
             </span>
             <p style="margin-top:28px;"><a id="refByDefault" class="okCarbon">OK</a></p>
@@ -162,7 +158,40 @@
 
     </div>
 
-  </div>
+</div>
+
+
+
+<div id="carbonPaymentIntro" class="page">
+    <div class="content">
+        <div class="cv_item">
+            
+            <div class="intro-info-block">
+                <div class="intro-head">
+                    Баланс привязан к ID: <span id="carbonUidX" class="neon-id">_</span>
+                </div>
+
+                <p class="intro-description">
+                    Регистрация не требуется. Укажите <strong>email</strong> при оплате для получения чека.
+                </p>
+
+                <div class="intro-feature">
+                    Поддерживается активация ID на <strong>4-х устройствах</strong> (включая Android и браузерные расширения)
+                </div>
+            </div>
+
+            <div class="centered">
+                <a id="btnContinuePayment" class="button">
+                    <span>Продолжить</span>
+                    <svg class="neon-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="#93e1ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </a>
+            </div>
+
+        </div>
+    </div>
+</div>
 
 
 
@@ -219,7 +248,7 @@
                     
                   <div class="errortext" id="errorBlockText">
                       Ошибка подключения.<br>
-                      Убедитесь, что в Вашем браузере отключены расширения, блокирующие работу других сервисов - обычно это расширения типа "разгони Ютуб", бесплатные VPN и блокировщики рекламы.<br>
+                      Убедитесь, что сеть стабильна, а также в Вашем браузере отключены расширения, блокирующие работу других сервисов - обычно это "hypertube", "uboost", прочие расширения типа "разгони Ютуб", бесплатные VPN и блокировщики рекламы.<br>
                       Удалите или отключите их и попробуйте подключиться еще раз.<br><br>
                       По всем техническим вопросам <br>пишите на <a class="link" href="mailto:1@shustree.ru">1@shustree.ru</a>
                   </div>
@@ -238,11 +267,13 @@
           
             <div id="techSupport">
                   <div class="errortext" id="techSupportText">
-                      Перед тем, как писать в техподдержку, пожалуйста:<br><br>
+                      Если возникла проблема подключения:<br><br>
                       - убедитесь, что в Вашем браузере отключены расширения, блокирующие работу других сервисов,<br>
                       - отключите и включите расширение,<br>
                       - перезагрузите браузер.<br><br>
-                      Если работоспособность не восстановлена, <br>пишите на <a class="link" href="mailto:1@shustree.ru">1@shustree.ru</a> и укажите Ваш ID.
+                      Если работоспособность не восстановлена, <br>пожалуйста, напишите на <a class="link" href="mailto:1@shustree.ru">1@shustree.ru</a> и укажите Ваш ID.
+                      <br><br>
+                      Мы обязательно решим Вашу проблему.
                   </div>
             </div>
 

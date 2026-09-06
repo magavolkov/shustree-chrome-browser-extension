@@ -1,5 +1,5 @@
 # shustree-chrome-browser-extension
-## Shustree Chrome Browser Extension (v1.7.3)
+## Shustree Chrome Browser Extension (v1.7.8)
 
 * **Chrome Web Store:** [Chrome Extension Shustree](https://chromewebstore.google.com/detail/shustree/fjancimbiajbfljkoggkchelcfmknkoo)
 * **Website:** [shustree.ru](https://shustree.ru)
