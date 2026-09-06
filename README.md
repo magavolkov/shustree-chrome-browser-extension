@@ -1,5 +1,14 @@
 # shustree-chrome-browser-extension
+<<<<<<< HEAD
 ## Shustree Chrome Browser Extension (v1.7.8)
+=======
+
+
+## English
+
+## Shustree Chrome Browser Extension (v1.7.4)
+
+>>>>>>> 9187c3e8cf2aa79de9e987841c9e1f382807d637
 
 * **Chrome Web Store:** [Chrome Extension Shustree](https://chromewebstore.google.com/detail/shustree/fjancimbiajbfljkoggkchelcfmknkoo)
 * **Website:** [shustree.ru](https://shustree.ru)
@@ -132,3 +141,168 @@ __⚙️ Installation & Developer Setup__
 
 __License__  
 This project is open-sourced under the MIT License. Feel free to modify, simplify, or scale the API logic to match your custom proxy architectures.
+
+
+
+
+
+
+---
+
+
+## Расширение Shustree для браузера Chrome (v1.7.4)
+
+## Shustree Chrome Browser Extension (v1.7.4)
+
+
+* **Расширение в Chrome Web Store:** [Chrome Extension Shustree](https://chromewebstore.google.com/detail/shustree/fjancimbiajbfljkoggkchelcfmknkoo)
+* **Вебсайт:** [shustree.ru](https://shustree.ru)
+
+Легковесное, гибко настраиваемое расширение для Google Chrome, разработанное для продвинутой маршрутизации браузерного трафика. Готовый к продакшену релиз демонстрирует глубокое использование API chrome.proxy и предназначен для разработчиков, которым нужен полный контроль над маршрутизацией без использования тяжелых сторонних фреймворков.
+
+
+
+---
+
+## 🚀 Возможности и специфика сетей в РФ:  
+* **Поддержка мультипротокольности:** Настройка и маршрутизация трафика через прокси-протоколы HTTP, HTTPS и SOCKS5.  
+* **Гибко настраиваемая API-маршрутизация:** Продвинутые кастомные API-вызовы для динамической конфигурации прокси, аутентификации и правил маршрутизации. Вы можете легко усложнять или упрощать правила под требования своей инфраструктуры.  
+* **Двуязычность (EN/RU):** Полноценная нативная локализация для англоязычного и русскоязычного рынков. Расширение динамически адаптирует интерфейс, инструкции по устранению неполадок и системные сообщения под язык браузера пользователя.
+* **Совместимость с российскими сетями:** > ⚠️ **Внимание:** Протокол SOCKS5 подвержен жестким блокировкам DPI (Deep Packet Inspection) и замедлению в РФ. Если вы разворачиваете узлы для пользователей в России, настоятельно рекомендуется использовать HTTP/HTTPS протоколы вместо SOCKS5.  
+
+
+
+
+---
+
+## ⚡ Архитектура без сторонних зависимостей и кастомный UI-фреймворк:
+
+В отличие от большинства современных расширений, перегруженных тяжелыми внешними библиотеками, Shustree спроектирован с нуля для максимального отклика и безопасности:
+
+* **Vanilla JS + Native APIs:** Написан полностью на чистом JavaScript с использованием нативных API расширений Chrome.
+* **Кастомный микрофреймворк:** Расширение использует собственный легковесный UI-фреймворк, который мгновенно отрисовывает приложение. Никакого jQuery, React или других тяжелых движков.
+* **Приватность превыше всего:** Интерфейс работает невероятно быстро. Что еще важнее — расширение совершает ровно ноль сторонних сетевых запросов: все коммуникации строго ограничены вашим собственным API, полностью защищая данные пользователей от утечек и систем аналитики.
+
+
+
+
+
+
+## 🛠️ Рекомендуемые серверные решения
+Для работы с расширением вы можете легко развернуть собственные прокси-серверы, используя стандартные Linux-пакеты:
+* **HTTP:** Используйте [Squid Proxy](http://www.squid-cache.org/) — индустриальный стандарт для надежного, высокопроизводительного кэширования и HTTP-маршрутизации с гибким контролем доступа.
+* **SOCKS5:** Используйте [Dante](https://www.inet.no/dante/) — высококлассный и стабильный SOCKS-сервер (идеален для узлов, развернутых за пределами зоны действия систем DPI в РФ).
+* **HTTPS (Защищенный):** Для защищенного шифрованного TLS-проксирования рекомендуется связывать Squid/Dante с обратным TLS-прокси (например, [Nginx](https://nginx.org/) или [Stunnel](https://www.stunnel.org/)), который берет на себя TLS-рукопожатие перед передачей чистого трафика на прокси-демон, либо использовать специализированные защищенные туннели.
+
+---
+
+## 💻 Примеры конфигурации расширения
+Ядро маршрутизации опирается на API Chrome `chrome.proxy.settings`. Ниже приведены шаблоны кода, демонстрирующие структуру внутренних параметров JSON-конфигурации в `background.js` (или service worker) для различных вариантов прокси.
+
+### 1. Конфигурация HTTP Proxy
+Маршрутизирует весь стандартный HTTP и резервный трафик через незашифрованный HTTP прокси-сервер.
+
+```javascript
+const httpConfig = {
+  mode: "fixed_servers",
+  rules: {
+    singleProxy: {
+      scheme: "http",
+      host: "your.http-proxy-server.com",
+      port: 3128 // Стандартный порт Squid
+    },
+    bypassList: ["localhost", "127.0.0.1", "<all_urls>"] // Исключение локальных доменов
+  }
+};
+
+chrome.proxy.settings.set({ value: httpConfig, scope: "regular" }, () => {
+  console.log("HTTP Proxy успешно настроен.");
+});
+```
+
+
+
+__2. Конфигурация HTTPS (Secure) Proxy__  
+Шифрует рукопожатие и передаваемые данные между браузером и прокси-сервером с помощью TLS/SSL.  
+```JavaScript
+const httpsConfig = {
+  mode: "fixed_servers",
+  rules: {
+    singleProxy: {
+      scheme: "https",
+      host: "your.secure-proxy-server.com",
+      port: 443
+    },
+    bypassList: ["localhost", "127.0.0.1"]
+  }
+};
+
+chrome.proxy.settings.set({ value: httpsConfig, scope: "regular" }, () => {
+  console.log("Secure HTTPS Proxy configured successfully.");
+});
+```
+
+
+
+
+__3. Конфигурация SOCKS5__  
+Маршрутизирует трафик через SOCKS5 прокси-сервер. (Примечание: учитывайте ограничения и блокировки DPI внутри России).
+
+```JavaScript
+const socks5Config = {
+  mode: "fixed_servers",
+  rules: {
+    singleProxy: {
+      scheme: "socks5",
+      host: "your.socks5-server.com",
+      port: 1080 // Стандартный порт Dante/SOCKS5
+    },
+    bypassList: ["localhost", "127.0.0.1"]
+  }
+};
+
+chrome.proxy.settings.set({ value: socks5Config, scope: "regular" }, () => {
+  console.log("SOCKS5 Proxy успешно настроен.");
+});
+
+```
+
+
+__4. Обработка аутентификации на прокси (Manifest V3)__  
+Если ваши прокси Dante или Squid требуют авторизации, расширение передает учетные данные в фоновом режиме через API chrome.webRequest.
+
+```JavaScript
+// В вашем background.js
+chrome.webRequest.onAuthRequired.addListener(
+  (details) => {
+    if (details.isProxy) {
+      return {
+        authCredentials: {
+          username: "your_shustree_username",
+          password: "your_secure_password"
+        }
+      };
+    }
+  },
+  { urls: ["<all_urls>"] },
+  ["blocking"] // Требуется для подстановки учетных данных
+);
+```
+
+
+__⚙️ Installation & Developer Setup__  
+    1. Клонируйте репозиторий:  
+       ```bash
+   git clone https://github.com/magavolkov/shustree-chrome-browser-extension.git
+       ```  
+    2. Перейдите в раздел управления расширениями Chrome, введя chrome://extensions/ в адресной строке.  
+    3. Включите Режим разработчика (переключатель в правом верхнем углу).  
+    4. Нажмите Загрузить распакованное расширение в левом верхнем углу.  
+    5. Выберите корневую директорию клонированного репозитория (shustree-chrome-browser-extension).  
+    6. Откройте консоль браузера или фоновую консоль service worker расширения для просмотра активных логов маршрутизации.  
+
+__License__  
+Проект распространяется под открытой лицензией MIT. Вы можете свободно модифицировать, упрощать или масштабировать логику API под ваши архитектурные задачи
+
+
+
